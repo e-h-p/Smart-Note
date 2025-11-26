@@ -56,7 +56,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")   // for network call
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3") // coroutine
-    implementation("com.google.code.gson:gson:2.10.1")    // JSON parsing
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.android.material:material:1.12.0")
 }

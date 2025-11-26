@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">NoteSmarterAI</string>
+
+    <string name="input_hint">Type something...</string>
+    <string name="send_button_text">Send</string>
+    <string name="ai_response_placeholder">AI Response will appear here</string>
+    <string name="status_generating">Generating...</string>
 </resources>
