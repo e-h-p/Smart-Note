@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "247949364693",
+    "firebase_url": "https://notesmarterai-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "notesmarterai",
+    "storage_bucket": "notesmarterai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:247949364693:android:0d6a840a2270bf76ebc15c",
+        "android_client_info": {
+          "package_name": "com.example.notesmarterai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr8ibc_cYvD9cPP0kIV4bpX_HsLUGilkk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
