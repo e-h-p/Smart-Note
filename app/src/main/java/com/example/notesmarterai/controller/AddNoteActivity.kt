@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.notesmarterai.R
 import com.example.notesmarterai.model.Note
+import com.google.firebase.auth.FirebaseAuth // NEW
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import okhttp3.*
@@ -29,35 +30,33 @@ import java.util.concurrent.TimeUnit
 
 class AddNoteActivity : AppCompatActivity() {
 
+    // ... (UI Variables same as before) ...
     private lateinit var etNoteInput: EditText
     private lateinit var etTitle: EditText
     private lateinit var etCategory: EditText
     private lateinit var etPriority: EditText
     private lateinit var etFinalNote: EditText
     private lateinit var etAiSummary: EditText
-
-    // DATE FIELDS
     private lateinit var etDay: EditText
     private lateinit var etMonth: EditText
     private lateinit var etYear: EditText
-
-    // TIME FIELDS
     private lateinit var etHour: EditText
     private lateinit var etMinute: EditText
     private lateinit var spinnerAmPm: Spinner
     private lateinit var cbNoReminder: CheckBox
-
     private lateinit var progressBar: ProgressBar
     private lateinit var btnGenerate: Button
     private lateinit var btnSave: Button
 
     private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance() // NEW
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val apiKey = "GEMINI API KEY" // REPLACE WITH YOUR KEY
+    private val apiKey = "GEMINI API KEY"
 
     private var isEditMode = false
     private var existingNoteId: String? = null
@@ -83,9 +82,7 @@ class AddNoteActivity : AppCompatActivity() {
             etPriority.setText(intent.getIntExtra("NOTE_PRIORITY", 1).toString())
             etFinalNote.setText(intent.getStringExtra("NOTE_FINAL"))
             etAiSummary.setText(intent.getStringExtra("NOTE_SUMMARY"))
-
             etNoteInput.setText(intent.getStringExtra("NOTE_ROUGH") ?: "")
-
             val savedTime = intent.getStringExtra("NOTE_REMINDER") ?: "None"
             setSplitTime(savedTime)
         } else {
@@ -116,7 +113,6 @@ class AddNoteActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBarAI)
         btnGenerate = findViewById(R.id.btnGenerateAI)
         btnSave = findViewById(R.id.btnSaveNote)
-
         etDay = findViewById(R.id.etDay)
         etMonth = findViewById(R.id.etMonth)
         etYear = findViewById(R.id.etYear)
@@ -141,13 +137,8 @@ class AddNoteActivity : AppCompatActivity() {
             etHour.isEnabled = !isChecked
             etMinute.isEnabled = !isChecked
             spinnerAmPm.isEnabled = !isChecked
-
             if (isChecked) {
-                etDay.text.clear()
-                etMonth.text.clear()
-                etYear.text.clear()
-                etHour.text.clear()
-                etMinute.text.clear()
+                etDay.text.clear(); etMonth.text.clear(); etYear.text.clear(); etHour.text.clear(); etMinute.text.clear()
             } else {
                 if (etDay.text.isEmpty()) {
                     val calendar = Calendar.getInstance()
@@ -161,22 +152,13 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun getCombinedTime(): String {
         if (cbNoReminder.isChecked) return "None"
-
         var dd = etDay.text.toString().padStart(2, '0')
         var mm = etMonth.text.toString().padStart(2, '0')
         var yyyy = etYear.text.toString()
-
-        if (dd.isEmpty()) dd = "01"
-        if (mm.isEmpty()) mm = "01"
-        if (yyyy.isEmpty()) yyyy = Calendar.getInstance().get(Calendar.YEAR).toString()
-
-        var hh = etHour.text.toString()
-        var mmTime = etMinute.text.toString()
-        if (hh.isEmpty()) hh = "00"
-        if (mmTime.isEmpty()) mmTime = "00"
-        hh = hh.padStart(2, '0')
-        mmTime = mmTime.padStart(2, '0')
-
+        if (dd.isEmpty()) dd = "01"; if (mm.isEmpty()) mm = "01"; if (yyyy.isEmpty()) yyyy = Calendar.getInstance().get(Calendar.YEAR).toString()
+        var hh = etHour.text.toString(); var mmTime = etMinute.text.toString()
+        if (hh.isEmpty()) hh = "00"; if (mmTime.isEmpty()) mmTime = "00"
+        hh = hh.padStart(2, '0'); mmTime = mmTime.padStart(2, '0')
         val amPm = spinnerAmPm.selectedItem.toString()
         return "$dd/$mm/$yyyy $hh:$mmTime $amPm"
     }
@@ -187,67 +169,40 @@ class AddNoteActivity : AppCompatActivity() {
         } else {
             cbNoReminder.isChecked = false
             try {
-                // Defaults (Today's Date)
                 val calendar = Calendar.getInstance()
                 val todayDay = calendar.get(Calendar.DAY_OF_MONTH).toString()
                 val todayMonth = (calendar.get(Calendar.MONTH) + 1).toString()
                 val todayYear = calendar.get(Calendar.YEAR).toString()
 
-                var defaultHour = "00"
-                var defaultMinute = "00"
-                var defaultAmPm = 0 // AM
-
-                // Attempt to find Date (looks for '/')
                 if (timeString.contains("/")) {
                     val parts = timeString.split(" ")
                     val datePart = parts.find { it.contains("/") } ?: ""
                     val dateSplit = datePart.split("/")
                     if (dateSplit.size == 3) {
-                        etDay.setText(dateSplit[0])
-                        etMonth.setText(dateSplit[1])
-                        etYear.setText(dateSplit[2])
-                    } else {
-                        etDay.setText(todayDay)
-                        etMonth.setText(todayMonth)
-                        etYear.setText(todayYear)
+                        etDay.setText(dateSplit[0]); etMonth.setText(dateSplit[1]); etYear.setText(dateSplit[2])
                     }
-                } else {
-                    etDay.setText(todayDay)
-                    etMonth.setText(todayMonth)
-                    etYear.setText(todayYear)
-                }
+                } else { etDay.setText(todayDay); etMonth.setText(todayMonth); etYear.setText(todayYear) }
 
-                // Attempt to find Time (looks for ':')
                 if (timeString.contains(":")) {
                     val parts = timeString.split(" ")
                     val timePart = parts.find { it.contains(":") } ?: ""
                     val timeSplit = timePart.split(":")
-                    if (timeSplit.size >= 2) {
-                        etHour.setText(timeSplit[0])
-                        etMinute.setText(timeSplit[1])
-                    } else {
-                        etHour.setText(defaultHour)
-                        etMinute.setText(defaultMinute)
-                    }
-
-                    if (timeString.contains("PM", ignoreCase = true)) {
-                        spinnerAmPm.setSelection(1)
-                    } else {
-                        spinnerAmPm.setSelection(0)
-                    }
-                } else {
-                    etHour.setText(defaultHour)
-                    etMinute.setText(defaultMinute)
-                    spinnerAmPm.setSelection(defaultAmPm)
+                    if (timeSplit.size >= 2) { etHour.setText(timeSplit[0]); etMinute.setText(timeSplit[1]) }
+                    if (timeString.contains("PM", ignoreCase = true)) spinnerAmPm.setSelection(1) else spinnerAmPm.setSelection(0)
                 }
-
-            } catch (e: Exception) {
-                cbNoReminder.isChecked = true
-            }
+            } catch (e: Exception) { cbNoReminder.isChecked = true }
         }
     }
 
     private fun saveNoteToFirebase() {
+        // SECURITY CHECK
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            Toast.makeText(this, "Error: User not logged in", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         val note = Note(
             title = etTitle.text.toString(),
             category = etCategory.text.toString(),
@@ -259,49 +214,39 @@ class AddNoteActivity : AppCompatActivity() {
             timestamp = System.currentTimeMillis()
         )
 
+        // UPDATED PATH: users/{userId}/notes
+        val userNotesRef = db.collection("users").document(userId).collection("notes")
+
         if (isEditMode && existingNoteId != null) {
-            db.collection("notes").document(existingNoteId!!)
-                .set(note)
+            userNotesRef.document(existingNoteId!!)
+                .set(note) // Offline-supported write
                 .addOnSuccessListener {
                     Toast.makeText(this, "Note Updated!", Toast.LENGTH_SHORT).show()
                     finish()
                 }
-                .addOnFailureListener { e ->
-                    showErrorPopup("Update Failed: ${e.message}")
-                }
+                .addOnFailureListener { e -> showErrorPopup("Update Failed: ${e.message}") }
         } else {
-            db.collection("notes")
-                .add(note)
+            userNotesRef
+                .add(note) // Offline-supported write
                 .addOnSuccessListener {
                     Toast.makeText(this, "Note Saved!", Toast.LENGTH_SHORT).show()
                     finish()
                 }
-                .addOnFailureListener { e ->
-                    showErrorPopup("Save Failed: ${e.message}")
-                }
+                .addOnFailureListener { e -> showErrorPopup("Save Failed: ${e.message}") }
         }
     }
 
     private fun showErrorPopup(message: String) {
-        AlertDialog.Builder(this)
-            .setTitle("Error")
-            .setMessage(message)
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-            .show()
+        AlertDialog.Builder(this).setTitle("Error").setMessage(message).setPositiveButton("OK") { d, _ -> d.dismiss() }.show()
     }
 
     private fun generateNoteWithGemini(userText: String) {
         progressBar.visibility = View.VISIBLE
         btnGenerate.isEnabled = false
-
-        // 1. Get Real Today's Date
         val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val currentDate = sdf.format(Date())
 
         val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=$apiKey"
-
-        // 2. Insert Date into Prompt
         val promptText = """
             Analyze the following text and extract/generate a JSON object.
             Text: "$userText"
@@ -311,66 +256,43 @@ class AddNoteActivity : AppCompatActivity() {
             {
                 "Title": "string",
                 "Category": "string",
-                "ReminderTime": "string (Format: 'dd/MM/yyyy HH:MM AM' or 'None'. Calculate relative dates like 'tomorrow' based on Current Date)",
+                "ReminderTime": "string (Format: 'dd/MM/yyyy HH:MM AM' or 'None')",
                 "Priority": integer (1-10),
-                "FinalNote": "string (Rewrite the original text to be clear, professional, and well-formatted)",
-                "AiSummary": "string (Concise, direct action only.)"
+                "FinalNote": "string",
+                "AiSummary": "string"
             }
             Return ONLY the JSON. No markdown.
         """.trimIndent()
 
-        val jsonRequest = """
-            {
-              "contents": [{ "parts": [{ "text": ${Gson().toJson(promptText)} }] }]
-            }
-        """.trimIndent()
-
+        val jsonRequest = """{ "contents": [{ "parts": [{ "text": ${Gson().toJson(promptText)} }] }] }"""
         val body = jsonRequest.toRequestBody("application/json".toMediaType())
-        val request = Request.Builder().url(url).post(body).build()
 
-        client.newCall(request).enqueue(object : Callback {
+        client.newCall(Request.Builder().url(url).post(body).build()).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnGenerate.isEnabled = true
-                    showErrorPopup("Network Error")
-                }
+                runOnUiThread { progressBar.visibility = View.GONE; btnGenerate.isEnabled = true; showErrorPopup("Network Error") }
             }
-
             override fun onResponse(call: Call, response: Response) {
                 val resBody = response.body?.string()
                 runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnGenerate.isEnabled = true
-
-                    if (!response.isSuccessful) {
-                        showErrorPopup("AI Error: ${response.code}")
-                        return@runOnUiThread
-                    }
-
+                    progressBar.visibility = View.GONE; btnGenerate.isEnabled = true
+                    if (!response.isSuccessful) { showErrorPopup("AI Error"); return@runOnUiThread }
                     try {
                         val gson = Gson()
                         val map = gson.fromJson(resBody, Map::class.java)
                         val candidates = map["candidates"] as? List<*>
                         if (candidates.isNullOrEmpty()) return@runOnUiThread
-
                         val content = (candidates[0] as Map<*, *>)["content"] as Map<*, *>
                         val parts = (content["parts"] as List<*>)[0] as Map<*, *>
                         var aiText = parts["text"] as String
                         aiText = aiText.replace("```json", "").replace("```", "").trim()
-
                         val generatedNote = gson.fromJson(aiText, Note::class.java)
-
                         etTitle.setText(generatedNote.title)
                         etCategory.setText(generatedNote.category)
                         etPriority.setText(generatedNote.priority.toString())
                         etAiSummary.setText(generatedNote.aiSummary)
                         etFinalNote.setText(generatedNote.finalNote)
-
                         setSplitTime(generatedNote.reminderTime)
-
                     } catch (e: Exception) {
-                        Log.e("Gemini", "Parse Error", e)
                         etFinalNote.setText(userText)
                     }
                 }

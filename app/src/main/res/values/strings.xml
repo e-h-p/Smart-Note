@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">NoteSmarterAI</string>
-
+    <string name="default_web_client_id">247949364693-ee03hv7jd1r4l4m2hip3pu5du4vqiptf.apps.googleusercontent.com</string>
     <string name="input_hint">Type something...</string>
     <string name="send_button_text">Send</string>
     <string name="ai_response_placeholder">AI Response will appear here</string>
