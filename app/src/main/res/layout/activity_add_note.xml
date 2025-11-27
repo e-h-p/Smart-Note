@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
     tools:ignore="HardcodedText,Autofill">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -13,20 +15,24 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Create Note"
+            android:text="Create / Edit Note"
             android:textSize="24sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp"/>
 
-        <EditText
-            android:id="@+id/etNoteInput"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Type your rough note here..."
-            android:gravity="top"
-            android:minHeight="100dp"
-            android:inputType="textMultiLine|textCapSentences"
-            android:background="@android:drawable/edit_text" />
+            android:hint="Rough Note (Original Input)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etNoteInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:minHeight="100dp"
+                android:inputType="textMultiLine|textCapSentences"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/btnGenerateAI"
@@ -43,59 +49,215 @@
             android:layout_gravity="center"
             android:visibility="gone"/>
 
-        <EditText
-            android:id="@+id/etTitle"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:hint="Title"
-            android:inputType="textCapWords"
-            android:layout_marginTop="16dp"/>
-
-        <EditText
-            android:id="@+id/etCategory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textCapWords"
-            android:hint="Category (e.g. Work)" />
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapWords"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginTop="8dp">
 
-            <EditText
-                android:id="@+id/etPriority"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
-                android:layout_weight="1"
+                android:layout_weight="1.5"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:hint="Priority (1-10)" />
+                android:hint="Category"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCategory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapWords"/>
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <EditText
-                android:id="@+id/etReminder"
+            <View android:layout_width="16dp" android:layout_height="1dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
-                android:layout_weight="1"
+                android:layout_weight="0.8"
                 android:layout_height="wrap_content"
-                android:inputType="datetime"
-                android:hint="Reminder Time" />
+                android:hint="Priority (1-10)"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPriority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-        <EditText
-            android:id="@+id/etFinalNote"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Final Detailed Note"
-            android:inputType="textMultiLine|textCapSentences"
-            android:minHeight="80dp"/>
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:strokeColor="@android:color/darker_gray"
+            app:strokeWidth="1dp"
+            app:cardCornerRadius="4dp"
+            app:cardElevation="0dp">
 
-        <EditText
-            android:id="@+id/etAiSummary"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reminder Settings"
+                    android:textSize="12sp"
+                    android:textColor="@color/purple_500"
+                    android:layout_marginBottom="8dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Date"
+                            android:textSize="10sp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <EditText
+                                android:id="@+id/etDay"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:hint="DD"
+                                android:inputType="number"
+                                android:maxLength="2"
+                                android:textAlignment="center"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="/" />
+                            <EditText
+                                android:id="@+id/etMonth"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:hint="MM"
+                                android:inputType="number"
+                                android:maxLength="2"
+                                android:textAlignment="center"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="/" />
+                            <EditText
+                                android:id="@+id/etYear"
+                                android:layout_width="0dp"
+                                android:layout_weight="1.5"
+                                android:layout_height="wrap_content"
+                                android:hint="YYYY"
+                                android:inputType="number"
+                                android:maxLength="4"
+                                android:textAlignment="center"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View android:layout_width="16dp" android:layout_height="1dp"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Time"
+                            android:textSize="10sp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <EditText
+                                android:id="@+id/etHour"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:hint="00"
+                                android:inputType="number"
+                                android:maxLength="2"
+                                android:textAlignment="center"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=":" />
+                            <EditText
+                                android:id="@+id/etMinute"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:layout_height="wrap_content"
+                                android:hint="00"
+                                android:inputType="number"
+                                android:maxLength="2"
+                                android:textAlignment="center"/>
+                            <Spinner
+                                android:id="@+id/spinnerAmPm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <CheckBox
+                    android:id="@+id/cbNoReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No Reminder"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="AI Rewritten Note"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFinalNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minHeight="80dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
             android:hint="AI Summary"
-            android:inputType="textMultiLine|textCapSentences"
-            android:minHeight="60dp"
-            android:layout_marginBottom="16dp"/>
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etAiSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine|textCapSentences"
+                android:minHeight="60dp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/btnSaveNote"
