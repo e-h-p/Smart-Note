@@ -62,8 +62,12 @@ class MainActivity : AppCompatActivity() {
         intent.putExtra("NOTE_CATEGORY", note.category)
         intent.putExtra("NOTE_PRIORITY", note.priority)
         intent.putExtra("NOTE_REMINDER", note.reminderTime)
-        intent.putExtra("NOTE_FINAL", note.finalNote)
+        intent.putExtra("NOTE_FINAL", note.finalNote) // This is the AI Rewritten part
         intent.putExtra("NOTE_SUMMARY", note.aiSummary)
+
+        // NEW: Pass the rough note so it appears in the top box
+        intent.putExtra("NOTE_ROUGH", note.roughNote)
+
         intent.putExtra("NOTE_TIMESTAMP", note.timestamp)
         startActivity(intent)
     }

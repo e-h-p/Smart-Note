@@ -16,17 +16,17 @@ data class Note(
     var priority: Int = 1,
 
     @SerializedName("FinalNote")
-    var finalNote: String = "",
+    var finalNote: String = "", // This will store the "AI Rewritten" version
 
     @SerializedName("AiSummary")
     var aiSummary: String = "",
 
-    // New Field: Captures the time the note object is created
-    var timestamp: Long = System.currentTimeMillis(),
+    // NEW: Store the original rough input so it is never lost
+    @SerializedName("RoughNote")
+    var roughNote: String = "",
 
-    // ID is excluded from AI generation, used for Firebase
+    var timestamp: Long = System.currentTimeMillis(),
     var id: String = ""
 ) {
-    // Empty constructor required for Firestore
-    constructor() : this("", "", "", 1, "", "", System.currentTimeMillis(), "")
+    constructor() : this("", "", "", 1, "", "", "", System.currentTimeMillis(), "")
 }
