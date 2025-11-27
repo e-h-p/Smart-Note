@@ -81,10 +81,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-<<<<<<< HEAD
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.11.0")
-    implementation("com.google.android.material:material:1.12.0")
-=======
->>>>>>> 2117acb (Integrate Firebase SDK and configure database connection)
 }

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:ignore="HardcodedText,Autofill">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create Note"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+
+        <EditText
+            android:id="@+id/etNoteInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type your rough note here..."
+            android:gravity="top"
+            android:minHeight="100dp"
+            android:inputType="textMultiLine|textCapSentences"
+            android:background="@android:drawable/edit_text" />
+
+        <Button
+            android:id="@+id/btnGenerateAI"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✨ Generate with Gemini AI"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/teal_700"/>
+
+        <ProgressBar
+            android:id="@+id/progressBarAI"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+
+        <EditText
+            android:id="@+id/etTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Title"
+            android:inputType="textCapWords"
+            android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/etCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapWords"
+            android:hint="Category (e.g. Work)" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etPriority"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:hint="Priority (1-10)" />
+
+            <EditText
+                android:id="@+id/etReminder"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:inputType="datetime"
+                android:hint="Reminder Time" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etFinalNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Final Detailed Note"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minHeight="80dp"/>
+
+        <EditText
+            android:id="@+id/etAiSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="AI Summary"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minHeight="60dp"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnSaveNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save to Firebase"
+            android:backgroundTint="@color/purple_500"/>
+
+    </LinearLayout>
+</ScrollView>
