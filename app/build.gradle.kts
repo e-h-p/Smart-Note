@@ -72,7 +72,11 @@ dependencies {
 
     // Firestore Database (ADD THIS ONE)
     implementation("com.google.firebase:firebase-firestore")
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth")
 
+    // Google Play Services (For the Google Sign-In Button)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
     // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
