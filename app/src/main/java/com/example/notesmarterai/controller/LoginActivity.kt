@@ -5,10 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-
-// --- CRITICAL IMPORT: This connects your controller to your resources (R) ---
 import com.example.notesmarterai.R
-
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -19,6 +16,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 class LoginActivity : AppCompatActivity() {
 
     private lateinit var btnGoogleSign: Button
+    private lateinit var btnGuest: Button // New
     private lateinit var auth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
 
@@ -27,10 +25,9 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         btnGoogleSign = findViewById(R.id.btnGoogleSign)
+        btnGuest = findViewById(R.id.btnGuest) // New
         auth = FirebaseAuth.getInstance()
 
-        // Configure Google Sign In
-        // We use the ID you pasted into strings.xml here:
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
@@ -38,13 +35,15 @@ class LoginActivity : AppCompatActivity() {
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        // Check if user is already logged in. If yes, skip login screen.
         if (auth.currentUser != null) {
-            goToMainActivity()
+            goToMainActivity(isGuest = false)
         }
 
-        btnGoogleSign.setOnClickListener {
-            signIn()
+        btnGoogleSign.setOnClickListener { signIn() }
+
+        // Guest Mode Logic
+        btnGuest.setOnClickListener {
+            goToMainActivity(isGuest = true)
         }
     }
 
@@ -56,12 +55,10 @@ class LoginActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
         if (requestCode == 9001) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
                 val account = task.getResult(ApiException::class.java)
-                // Google Sign In was successful, authenticate with Firebase
                 firebaseAuthWithGoogle(account.idToken!!)
             } catch (e: ApiException) {
                 Toast.makeText(this, "Google Sign In Failed: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -74,16 +71,17 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Sign in success, update UI with the signed-in user's information
-                    goToMainActivity()
+                    goToMainActivity(isGuest = false)
                 } else {
                     Toast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show()
                 }
             }
     }
 
-    private fun goToMainActivity() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish() // Prevents the user from pressing "Back" to return to the login screen
+    private fun goToMainActivity(isGuest: Boolean) {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.putExtra("IS_GUEST", isGuest)
+        startActivity(intent)
+        finish()
     }
 }

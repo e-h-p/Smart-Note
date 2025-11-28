@@ -21,4 +21,12 @@
         android:text="Sign in with Google"
         android:backgroundTint="@android:color/holo_blue_dark"/>
 
+    <Button
+        android:id="@+id/btnGuest"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        android:text="Continue as Guest"
+        android:backgroundTint="@android:color/darker_gray"/>
+
 </LinearLayout>

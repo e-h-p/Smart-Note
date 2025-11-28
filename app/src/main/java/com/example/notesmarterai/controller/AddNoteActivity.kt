@@ -1,21 +1,14 @@
 package com.example.notesmarterai.controller
 
-import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.ProgressBar
-import android.widget.Spinner
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.notesmarterai.R
+import com.example.notesmarterai.model.LocalNoteManager
 import com.example.notesmarterai.model.Note
-import com.google.firebase.auth.FirebaseAuth // NEW
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import okhttp3.*
@@ -23,14 +16,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class AddNoteActivity : AppCompatActivity() {
 
-    // ... (UI Variables same as before) ...
+    // ... UI Variables ...
     private lateinit var etNoteInput: EditText
     private lateinit var etTitle: EditText
     private lateinit var etCategory: EditText
@@ -49,13 +40,8 @@ class AddNoteActivity : AppCompatActivity() {
     private lateinit var btnSave: Button
 
     private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance() // NEW
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
-
+    private val auth = FirebaseAuth.getInstance()
+    private val client = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).build()
     private val apiKey = com.example.notesmarterai.model.Secrets.GEMINI_API_KEY
 
     private var isEditMode = false
@@ -74,7 +60,6 @@ class AddNoteActivity : AppCompatActivity() {
             isEditMode = true
             existingNoteId = intent.getStringExtra("NOTE_ID")
             existingTimestamp = intent.getLongExtra("NOTE_TIMESTAMP", System.currentTimeMillis())
-
             btnSave.text = "Update Note"
 
             etTitle.setText(intent.getStringExtra("NOTE_TITLE"))
@@ -83,26 +68,22 @@ class AddNoteActivity : AppCompatActivity() {
             etFinalNote.setText(intent.getStringExtra("NOTE_FINAL"))
             etAiSummary.setText(intent.getStringExtra("NOTE_SUMMARY"))
             etNoteInput.setText(intent.getStringExtra("NOTE_ROUGH") ?: "")
-            val savedTime = intent.getStringExtra("NOTE_REMINDER") ?: "None"
-            setSplitTime(savedTime)
+            setSplitTime(intent.getStringExtra("NOTE_REMINDER") ?: "None")
         } else {
             setSplitTime("None")
         }
 
         btnGenerate.setOnClickListener {
             val rawText = etNoteInput.text.toString()
-            if (rawText.isNotEmpty()) {
-                generateNoteWithGemini(rawText)
-            } else {
-                Toast.makeText(this, "Please enter some text first", Toast.LENGTH_SHORT).show()
-            }
+            if (rawText.isNotEmpty()) generateNoteWithGemini(rawText)
+            else Toast.makeText(this, "Enter text first", Toast.LENGTH_SHORT).show()
         }
 
-        btnSave.setOnClickListener {
-            saveNoteToFirebase()
-        }
+        btnSave.setOnClickListener { saveNoteDispatcher() }
     }
 
+    // ... (Keep initViews, setupSpinner, setupListeners, getCombinedTime, setSplitTime EXACTLY AS THEY WERE) ...
+    // Paste those helper methods from your previous code here. I am omitting them for brevity, but DO NOT DELETE THEM.
     private fun initViews() {
         etNoteInput = findViewById(R.id.etNoteInput)
         etTitle = findViewById(R.id.etTitle)
@@ -194,15 +175,7 @@ class AddNoteActivity : AppCompatActivity() {
         }
     }
 
-    private fun saveNoteToFirebase() {
-        // SECURITY CHECK
-        val userId = auth.currentUser?.uid
-        if (userId == null) {
-            Toast.makeText(this, "Error: User not logged in", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-
+    private fun saveNoteDispatcher() {
         val note = Note(
             title = etTitle.text.toString(),
             category = etCategory.text.toString(),
@@ -211,27 +184,31 @@ class AddNoteActivity : AppCompatActivity() {
             finalNote = etFinalNote.text.toString(),
             aiSummary = etAiSummary.text.toString(),
             roughNote = etNoteInput.text.toString(),
-            timestamp = System.currentTimeMillis()
+            timestamp = if (isEditMode) existingTimestamp else System.currentTimeMillis(),
+            id = existingNoteId ?: ""
         )
 
-        // UPDATED PATH: users/{userId}/notes
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            saveNoteToFirebase(currentUser.uid, note)
+        } else {
+            // GUEST MODE
+            LocalNoteManager.saveNote(this, note)
+            Toast.makeText(this, "Note Saved Locally (Guest)", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+    }
+
+    private fun saveNoteToFirebase(userId: String, note: Note) {
         val userNotesRef = db.collection("users").document(userId).collection("notes")
 
-        if (isEditMode && existingNoteId != null) {
-            userNotesRef.document(existingNoteId!!)
-                .set(note) // Offline-supported write
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Note Updated!", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
+        if (isEditMode && note.id.isNotEmpty()) {
+            userNotesRef.document(note.id).set(note)
+                .addOnSuccessListener { Toast.makeText(this, "Note Updated!", Toast.LENGTH_SHORT).show(); finish() }
                 .addOnFailureListener { e -> showErrorPopup("Update Failed: ${e.message}") }
         } else {
-            userNotesRef
-                .add(note) // Offline-supported write
-                .addOnSuccessListener {
-                    Toast.makeText(this, "Note Saved!", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
+            userNotesRef.add(note)
+                .addOnSuccessListener { Toast.makeText(this, "Note Saved!", Toast.LENGTH_SHORT).show(); finish() }
                 .addOnFailureListener { e -> showErrorPopup("Save Failed: ${e.message}") }
         }
     }
@@ -286,6 +263,7 @@ class AddNoteActivity : AppCompatActivity() {
                         var aiText = parts["text"] as String
                         aiText = aiText.replace("```json", "").replace("```", "").trim()
                         val generatedNote = gson.fromJson(aiText, Note::class.java)
+
                         etTitle.setText(generatedNote.title)
                         etCategory.setText(generatedNote.category)
                         etPriority.setText(generatedNote.priority.toString())
@@ -293,7 +271,7 @@ class AddNoteActivity : AppCompatActivity() {
                         etFinalNote.setText(generatedNote.finalNote)
                         setSplitTime(generatedNote.reminderTime)
                     } catch (e: Exception) {
-                        etFinalNote.setText(userText)
+                        etFinalNote.setText(userText) // Fallback
                     }
                 }
             }
