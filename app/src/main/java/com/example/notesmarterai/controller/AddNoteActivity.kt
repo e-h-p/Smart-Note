@@ -56,7 +56,7 @@ class AddNoteActivity : AppCompatActivity() {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val apiKey = "GEMINI API KEY"
+    private val apiKey = com.example.notesmarterai.model.Secrets.GEMINI_API_KEY
 
     private var isEditMode = false
     private var existingNoteId: String? = null
