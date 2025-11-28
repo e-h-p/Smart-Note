@@ -1,5 +1,6 @@
 package com.example.notesmarterai.model
 
+import com.google.firebase.firestore.Exclude
 import com.google.gson.annotations.SerializedName
 
 data class Note(
@@ -16,17 +17,24 @@ data class Note(
     var priority: Int = 1,
 
     @SerializedName("FinalNote")
-    var finalNote: String = "", // This will store the "AI Rewritten" version
+    var finalNote: String = "",
 
     @SerializedName("AiSummary")
     var aiSummary: String = "",
 
-    // NEW: Store the original rough input so it is never lost
     @SerializedName("RoughNote")
     var roughNote: String = "",
 
     var timestamp: Long = System.currentTimeMillis(),
+
+    // NEW: Pin feature
+    var isPinned: Boolean = false,
+
     var id: String = ""
 ) {
-    constructor() : this("", "", "", 1, "", "", "", System.currentTimeMillis(), "")
+    // Exclude from Firestore/GSON so we don't save selection state permanently
+    @get:Exclude
+    var isSelected: Boolean = false
+
+    constructor() : this("", "", "", 1, "", "", "", System.currentTimeMillis(), false, "")
 }
