@@ -1,21 +1,21 @@
 package com.example.notesmarterai.adapter
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
+import android.widget.ImageView // Import ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesmarterai.R
 import com.example.notesmarterai.model.Note
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.google.android.material.card.MaterialCardView
 
 class NoteAdapter(
     private val noteList: List<Note>,
-    private val onNoteClick: (Note) -> Unit,    // <--- NEW: Action for editing
-    private val onDeleteClick: (Note) -> Unit   // Action for deleting
+    private val onNoteClick: (Note) -> Unit,
+    private val onNoteLongClick: (Note) -> Unit
 ) : RecyclerView.Adapter<NoteAdapter.NoteViewHolder>() {
 
     class NoteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -23,7 +23,9 @@ class NoteAdapter(
         val tvCategory: TextView = itemView.findViewById(R.id.tvCategory)
         val tvPriority: TextView = itemView.findViewById(R.id.tvPriority)
         val tvSummary: TextView = itemView.findViewById(R.id.tvSummary)
-        val btnDelete: ImageButton = itemView.findViewById(R.id.btnDelete)
+        // UPDATED: Changed from TextView to ImageView
+        val ivPinIndicator: ImageView = itemView.findViewById(R.id.ivPinIndicator)
+        val cardView: MaterialCardView = itemView.findViewById(R.id.cardView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
@@ -33,24 +35,32 @@ class NoteAdapter(
 
     override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
         val note = noteList[position]
+        val context = holder.itemView.context
+
         holder.tvTitle.text = note.title
-
-        // Format timestamp for display
-        val dateString = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(note.timestamp))
-        holder.tvCategory.text = "${note.category} • $dateString"
-
+        holder.tvCategory.text = note.category
         holder.tvPriority.text = "P: ${note.priority}"
-        holder.tvSummary.text = note.aiSummary
+        holder.tvSummary.text = if (note.aiSummary.isNotEmpty()) note.aiSummary else note.finalNote
 
-        // 1. Delete Button Click
-        holder.btnDelete.setOnClickListener {
-            onDeleteClick(note)
+        // 1. PIN INDICATOR VISIBILITY (Using the new ImageView)
+        if (note.isPinned) {
+            holder.ivPinIndicator.visibility = View.VISIBLE
+        } else {
+            holder.ivPinIndicator.visibility = View.GONE
         }
 
-        // 2. Whole Card Click (Triggers Edit)
-        holder.itemView.setOnClickListener {
-            onNoteClick(note)
+        // 2. SELECTION VISUALS
+        if (note.isSelected) {
+            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background_selected))
+            holder.cardView.strokeWidth = 4
+            holder.cardView.strokeColor = Color.parseColor("#FF6200EE")
+        } else {
+            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background_default))
+            holder.cardView.strokeWidth = 0
         }
+
+        holder.itemView.setOnClickListener { onNoteClick(note) }
+        holder.itemView.setOnLongClickListener { onNoteLongClick(note); true }
     }
 
     override fun getItemCount(): Int = noteList.size

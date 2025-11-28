@@ -7,4 +7,14 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="toolbar_background">#FFFFFF</color>
+    <color name="toolbar_icon_tint">#000000</color>
+    <color name="text_priority">@color/purple_700</color>
+    <color name="card_background_default">#FFFFFF</color>
+    <color name="card_background_selected">#E0E0E0</color>
+
+    <color name="bottom_bar_bg">#FFFFFF</color>
+    <color name="bottom_bar_content">#000000</color>
+    <color name="mid_green">#008000</color>
 </resources>

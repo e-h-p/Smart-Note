@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
+    android:fillViewport="true"
     tools:ignore="HardcodedText,Autofill">
 
     <LinearLayout
@@ -263,8 +264,9 @@
             android:id="@+id/btnSaveNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save to Firebase"
-            android:backgroundTint="@color/purple_500"/>
+            android:text="Save"
+            android:backgroundTint="@color/purple_500"
+            android:layout_marginBottom="32dp"/>
 
     </LinearLayout>
 </ScrollView>

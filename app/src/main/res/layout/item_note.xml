@@ -2,50 +2,55 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardElevation="4dp"
-    app:cardCornerRadius="8dp">
+    android:layout_margin="6dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="2dp"
+    app:strokeColor="@android:color/transparent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Note Title"
-                android:textSize="18sp"
-                android:textStyle="bold"/>
+                android:text="Title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"/>
+
+            <ImageView
+                android:id="@+id/ivPinIndicator"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_pin_filled_green"
+                android:visibility="gone"
+                android:layout_marginEnd="4dp"
+                android:contentDescription="Pinned Note Indicator" />
 
             <TextView
                 android:id="@+id/tvPriority"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="P: 1"
-                android:layout_marginEnd="12dp"
-                android:textColor="@color/purple_700"
+                android:text="P:1"
+                android:textSize="12sp"
+                android:textColor="@color/text_priority"
                 android:textStyle="bold"/>
-
-            <ImageButton
-                android:id="@+id/btnDelete"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_menu_delete"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:tint="@android:color/holo_red_dark"
-                android:contentDescription="Delete Note" />
         </LinearLayout>
 
         <TextView
@@ -53,17 +58,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Category"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp"
-            android:textColor="@android:color/darker_gray"/>
+            android:textSize="10sp"
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="4dp"/>
 
         <TextView
             android:id="@+id/tvSummary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="AI Summary will appear here..."
-            android:maxLines="3"
+            android:text="Summary..."
+            android:textSize="12sp"
+            android:maxLines="4"
             android:ellipsize="end"/>
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
