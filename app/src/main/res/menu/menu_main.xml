@@ -10,10 +10,15 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
     <item
-        android:id="@+id/action_filter"
+        android:id="@+id/action_sort"
         android:icon="@android:drawable/ic_menu_sort_by_size"
-        android:title="Filter Category"
+        android:title="Sort"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_filter"
+        android:title="Filter Category"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_night_mode"
@@ -24,6 +29,5 @@
     <item
         android:id="@+id/action_logout"
         android:title="Logout"
-        android:icon="@android:drawable/ic_lock_power_off"
         app:showAsAction="never" />
 </menu>

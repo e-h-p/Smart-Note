@@ -4,7 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView // Import ImageView
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -23,7 +23,6 @@ class NoteAdapter(
         val tvCategory: TextView = itemView.findViewById(R.id.tvCategory)
         val tvPriority: TextView = itemView.findViewById(R.id.tvPriority)
         val tvSummary: TextView = itemView.findViewById(R.id.tvSummary)
-        // UPDATED: Changed from TextView to ImageView
         val ivPinIndicator: ImageView = itemView.findViewById(R.id.ivPinIndicator)
         val cardView: MaterialCardView = itemView.findViewById(R.id.cardView)
     }
@@ -42,14 +41,23 @@ class NoteAdapter(
         holder.tvPriority.text = "P: ${note.priority}"
         holder.tvSummary.text = if (note.aiSummary.isNotEmpty()) note.aiSummary else note.finalNote
 
-        // 1. PIN INDICATOR VISIBILITY (Using the new ImageView)
+        // --- NEW: DYNAMIC PRIORITY COLOR ---
+        val priorityColor = when (note.priority) {
+            in 1..3 -> ContextCompat.getColor(context, R.color.priority_low)  // Green
+            in 4..6 -> ContextCompat.getColor(context, R.color.priority_med)  // Yellow
+            else -> ContextCompat.getColor(context, R.color.priority_high)    // Red
+        }
+        holder.tvPriority.setTextColor(priorityColor)
+        // -----------------------------------
+
+        // Pin Indicator
         if (note.isPinned) {
             holder.ivPinIndicator.visibility = View.VISIBLE
         } else {
             holder.ivPinIndicator.visibility = View.GONE
         }
 
-        // 2. SELECTION VISUALS
+        // Selection Visuals
         if (note.isSelected) {
             holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background_selected))
             holder.cardView.strokeWidth = 4
