@@ -1,7 +1,10 @@
 package com.example.notesmarterai.controller
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -11,6 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts // Import needed
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -22,6 +26,7 @@ import com.example.notesmarterai.R
 import com.example.notesmarterai.adapter.NoteAdapter
 import com.example.notesmarterai.model.LocalNoteManager
 import com.example.notesmarterai.model.Note
+import com.example.notesmarterai.model.NotificationScheduler // Import Scheduler
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -30,12 +35,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : AppCompatActivity() {
 
+    // ... (Previous Variables) ...
     private lateinit var recyclerView: RecyclerView
     private lateinit var fabAdd: FloatingActionButton
     private lateinit var adapter: NoteAdapter
     private lateinit var toolbar: MaterialToolbar
-
-    // Bottom Action Bar Views
     private lateinit var bottomSelectionBar: MaterialCardView
     private lateinit var btnPinSelected: LinearLayout
     private lateinit var btnDeleteSelected: LinearLayout
@@ -48,17 +52,29 @@ class MainActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private var isGuest = false
 
-    // State Variables for Filters & Sort
     private var isSelectionMode = false
     private var currentSortMode = "DATE_DESC"
     private var currentCategory = "All"
     private var currentSearchQuery = ""
 
+    // Permission Launcher for Android 13+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            // Optional: Show UI saying notifications are disabled
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Initialize Views
+        // 1. Create Notification Channel
+        NotificationScheduler.createNotificationChannel(this)
+        checkNotificationPermissions()
+
+        // ... (Rest of onCreate logic remains SAME) ...
         recyclerView = findViewById(R.id.recyclerViewNotes)
         fabAdd = findViewById(R.id.fabAddNote)
         toolbar = findViewById(R.id.toolbar)
@@ -72,7 +88,6 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        // 2. Setup RecyclerView
         recyclerView.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         adapter = NoteAdapter(
             displayList,
@@ -81,19 +96,16 @@ class MainActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
-        // 3. Listeners
         fabAdd.setOnClickListener { startActivity(Intent(this, AddNoteActivity::class.java)) }
         btnPinSelected.setOnClickListener { pinSelectedNotes() }
         btnDeleteSelected.setOnClickListener { showDeleteSelectedConfirmation() }
 
-        // 4. Data Loading & Night Mode
         isGuest = intent.getBooleanExtra("IS_GUEST", false)
         val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
         val isNight = prefs.getBoolean("NightMode", false)
         if (isNight) AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         else AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
-        // 5. Back Press Logic
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (isSelectionMode) {
@@ -106,12 +118,21 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    // Helper to check permissions
+    private fun checkNotificationPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    // ... (Rest of the file remains EXACTLY the same: onResume, Handlers, Menus, etc.) ...
+    // Just copy the rest of your existing MainActivity code here from previous steps.
     override fun onResume() {
         super.onResume()
         refreshData()
     }
-
-    // --- SELECTION & CLICK LOGIC ---
 
     private fun handleNoteLongClick(note: Note) {
         if (!isSelectionMode) {
@@ -170,8 +191,6 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    // --- PIN & DELETE ACTIONS ---
-
     private fun pinSelectedNotes() {
         val selectedNotes = displayList.filter { it.isSelected }
         if (selectedNotes.isEmpty()) return
@@ -193,6 +212,8 @@ class MainActivity : AppCompatActivity() {
         selectedNotes.forEach { note ->
             if (isGuest) LocalNoteManager.deleteNote(this, note.id)
             else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).delete()
+            // NEW: Cancel Notification if deleted
+            NotificationScheduler.cancelReminder(this, note)
         }
         exitSelectionMode()
         if (isGuest) loadGuestNotes()
@@ -202,8 +223,6 @@ class MainActivity : AppCompatActivity() {
         if (isGuest) LocalNoteManager.saveNote(this, note)
         else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).set(note)
     }
-
-    // --- DATA LOADING ---
 
     private fun refreshData() {
         if (isGuest) loadGuestNotes() else loadFirebaseNotes(auth.currentUser!!.uid)
@@ -229,18 +248,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- CENTRAL FILTER & SORT LOGIC ---
     private fun applyFiltersAndSort() {
-        // 1. Start with all notes
         var resultList = allNotesList.toList()
-
-        // 2. Apply Category Filter FIRST
-        // This ensures all subsequent operations (search, sort) only apply to this subset
         if (currentCategory != "All") {
             resultList = resultList.filter { it.category == currentCategory }
         }
-
-        // 3. Apply Search Filter SECOND
         if (currentSearchQuery.isNotEmpty()) {
             resultList = resultList.filter {
                 it.title.contains(currentSearchQuery, ignoreCase = true) ||
@@ -248,8 +260,6 @@ class MainActivity : AppCompatActivity() {
                         it.category.contains(currentSearchQuery, ignoreCase = true)
             }
         }
-
-        // 4. Apply Sort LAST
         val sortedList = resultList.sortedWith(compareByDescending<Note> { it.isPinned }
             .thenComparator { n1, n2 ->
                 when (currentSortMode) {
@@ -258,7 +268,6 @@ class MainActivity : AppCompatActivity() {
                     else -> n2.timestamp.compareTo(n1.timestamp)
                 }
             })
-
         updateDisplayList(sortedList)
     }
 
@@ -268,16 +277,12 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    // --- MENU ACTIONS ---
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-
         val iconColor = ContextCompat.getColor(this, R.color.toolbar_icon_tint)
         val searchItem = menu?.findItem(R.id.action_search)
         val searchView = searchItem?.actionView as SearchView
 
-        // Style Search View manually
         val searchIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_button)
         searchIcon?.setColorFilter(iconColor)
         val closeIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
@@ -286,13 +291,12 @@ class MainActivity : AppCompatActivity() {
         searchEditText?.setTextColor(iconColor)
         searchEditText?.setHintTextColor(iconColor)
 
-        // FIX: Reset state when search closes to restore icons
         searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean = true
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                currentSearchQuery = "" // Clear query
-                applyFiltersAndSort()   // Reset list
-                invalidateOptionsMenu() // FORCE redraw menu to show icons again
+                currentSearchQuery = ""
+                applyFiltersAndSort()
+                invalidateOptionsMenu()
                 return true
             }
         })
@@ -314,12 +318,10 @@ class MainActivity : AppCompatActivity() {
         val isNight = prefs.getBoolean("NightMode", false)
         nightItem?.isChecked = isNight
 
-        // Ensure all icons (including restored ones) are tinted correctly
         val iconColor = ContextCompat.getColor(this, R.color.toolbar_icon_tint)
         for (i in 0 until menu!!.size()) {
             menu.getItem(i).icon?.setTint(iconColor)
         }
-
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -335,17 +337,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSortDialog() {
         val options = arrayOf("Date (Newest First)", "Priority (High → Low)", "Priority (Low → High)")
-        AlertDialog.Builder(this)
-            .setTitle("Sort By")
-            .setItems(options) { _, which ->
-                currentSortMode = when (which) {
-                    1 -> "PRIORITY_HIGH_LOW"
-                    2 -> "PRIORITY_LOW_HIGH"
-                    else -> "DATE_DESC"
-                }
-                applyFiltersAndSort()
+        AlertDialog.Builder(this).setTitle("Sort By").setItems(options) { _, which ->
+            currentSortMode = when (which) {
+                1 -> "PRIORITY_HIGH_LOW"
+                2 -> "PRIORITY_LOW_HIGH"
+                else -> "DATE_DESC"
             }
-            .show()
+            applyFiltersAndSort()
+        }.show()
     }
 
     private fun showCategoryFilterDialog() {
@@ -361,10 +360,8 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
         val currentMode = prefs.getBoolean("NightMode", false)
         val newMode = !currentMode
-
         prefs.edit().putBoolean("NightMode", newMode).apply()
         item.isChecked = newMode
-
         AppCompatDelegate.setDefaultNightMode(if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
     }
 
