@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -11,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.notesmarterai.R
 import com.example.notesmarterai.model.LocalNoteManager
 import com.example.notesmarterai.model.Note
+import com.example.notesmarterai.model.NotificationScheduler
 import com.example.notesmarterai.model.Secrets
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.auth.FirebaseAuth
@@ -30,12 +32,10 @@ class AddNoteActivity : AppCompatActivity() {
     private lateinit var tvHeader: TextView
     private lateinit var etNoteInput: EditText
     private lateinit var etTitle: EditText
-    // Replaced single etCategory with Spinner + Layout
     private lateinit var spinnerCategory: Spinner
     private lateinit var layoutCategoryInput: LinearLayout
     private lateinit var etCategoryNew: EditText
     private lateinit var btnRevertCategory: ImageButton
-
     private lateinit var spinnerPriority: Spinner
     private lateinit var etFinalNote: EditText
     private lateinit var etAiSummary: EditText
@@ -59,21 +59,21 @@ class AddNoteActivity : AppCompatActivity() {
     private var existingNoteId: String? = null
     private var existingTimestamp: Long = System.currentTimeMillis()
 
-    // Store existing categories for AI and Dropdown
     private val existingCategories = mutableListOf<String>()
     private val ADD_NEW_CATEGORY = "Add New..."
-    // Predefined list for better UX
     private val defaultCategories = listOf("General", "Work", "Personal", "Ideas", "To-Do", "Shopping", "Finance", "Health", "Education")
+
+    private var is24HourSystem = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_note)
 
+        is24HourSystem = DateFormat.is24HourFormat(this)
+
         initViews()
         setupSpinners()
         setupListeners()
-
-        // Fetch categories immediately
         fetchCategoriesAndPopulate()
 
         toolbar.setNavigationOnClickListener { finish() }
@@ -87,8 +87,6 @@ class AddNoteActivity : AppCompatActivity() {
             btnSave.text = "Update"
 
             etTitle.setText(intent.getStringExtra("NOTE_TITLE"))
-            // Category population is handled in fetchCategories callback
-            // We save the intended category to select it once list is loaded
             val savedCategory = intent.getStringExtra("NOTE_CATEGORY") ?: "General"
             etCategoryNew.setText(savedCategory)
 
@@ -118,13 +116,10 @@ class AddNoteActivity : AppCompatActivity() {
         tvHeader = findViewById(R.id.tvHeader)
         etNoteInput = findViewById(R.id.etNoteInput)
         etTitle = findViewById(R.id.etTitle)
-
-        // New Category Views
         spinnerCategory = findViewById(R.id.spinnerCategory)
         layoutCategoryInput = findViewById(R.id.layoutCategoryInput)
         etCategoryNew = findViewById(R.id.etCategoryNew)
         btnRevertCategory = findViewById(R.id.btnRevertCategory)
-
         spinnerPriority = findViewById(R.id.spinnerPriority)
         etFinalNote = findViewById(R.id.etFinalNote)
         etAiSummary = findViewById(R.id.etAiSummary)
@@ -140,15 +135,11 @@ class AddNoteActivity : AppCompatActivity() {
         cbNoReminder = findViewById(R.id.cbNoReminder)
     }
 
-    // --- CATEGORY LOGIC ---
-
     private fun fetchCategoriesAndPopulate() {
         existingCategories.clear()
-        existingCategories.addAll(defaultCategories) // Add defaults first
-
+        existingCategories.addAll(defaultCategories)
         val userId = auth.currentUser?.uid
         if (userId != null) {
-            // Firebase Fetch
             db.collection("users").document(userId).collection("notes").get()
                 .addOnSuccessListener { snapshots ->
                     snapshots.forEach { doc ->
@@ -161,7 +152,6 @@ class AddNoteActivity : AppCompatActivity() {
                 }
                 .addOnFailureListener { setupCategorySpinner() }
         } else {
-            // Guest Mode Fetch
             val localNotes = LocalNoteManager.getNotes(this)
             localNotes.forEach {
                 if (it.category.isNotEmpty() && !existingCategories.contains(it.category)) {
@@ -175,12 +165,9 @@ class AddNoteActivity : AppCompatActivity() {
     private fun setupCategorySpinner() {
         val uniqueCategories = existingCategories.distinct().sorted().toMutableList()
         uniqueCategories.add(ADD_NEW_CATEGORY)
-
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, uniqueCategories)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerCategory.adapter = adapter
-
-        // If editing, select the existing category
         if (isEditMode) {
             val currentCat = etCategoryNew.text.toString()
             if (uniqueCategories.contains(currentCat)) {
@@ -190,27 +177,22 @@ class AddNoteActivity : AppCompatActivity() {
                 showCategorySpinner(false)
             }
         }
-
-        // Listener
         spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val selected = uniqueCategories[position]
                 if (selected == ADD_NEW_CATEGORY) {
-                    // FIX: Clear the text field when "Add New..." is selected
                     etCategoryNew.setText("")
                     showCategorySpinner(false)
                     etCategoryNew.requestFocus()
                 } else {
-                    etCategoryNew.setText(selected) // Keep text synced
+                    etCategoryNew.setText(selected)
                 }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-
-        // Revert Button
         btnRevertCategory.setOnClickListener {
             showCategorySpinner(true)
-            spinnerCategory.setSelection(0) // Reset to first item
+            spinnerCategory.setSelection(0)
         }
     }
 
@@ -225,23 +207,30 @@ class AddNoteActivity : AppCompatActivity() {
     }
 
     private fun setupSpinners() {
-        // AM/PM
-        val amPmAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, arrayOf("AM", "PM"))
-        amPmAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerAmPm.adapter = amPmAdapter
-
-        // Priority
         val priorities = (1..9).toList()
         val pAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, priorities)
         pAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerPriority.adapter = pAdapter
+
+        val amPmAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, arrayOf("AM", "PM"))
+        amPmAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerAmPm.adapter = amPmAdapter
+
+        if (is24HourSystem) {
+            spinnerAmPm.visibility = View.GONE
+            etHour.hint = "00-23"
+        } else {
+            spinnerAmPm.visibility = View.VISIBLE
+            etHour.hint = "01-12"
+        }
     }
 
     private fun setupListeners() {
         cbNoReminder.setOnCheckedChangeListener { _, isChecked ->
             val enable = !isChecked
             etDay.isEnabled = enable; etMonth.isEnabled = enable; etYear.isEnabled = enable
-            etHour.isEnabled = enable; etMinute.isEnabled = enable; spinnerAmPm.isEnabled = enable
+            etHour.isEnabled = enable; etMinute.isEnabled = enable
+            spinnerAmPm.isEnabled = enable && !is24HourSystem
 
             if (isChecked) {
                 etDay.text.clear(); etMonth.text.clear(); etYear.text.clear()
@@ -252,6 +241,23 @@ class AddNoteActivity : AppCompatActivity() {
                     etDay.setText(calendar.get(Calendar.DAY_OF_MONTH).toString())
                     etMonth.setText((calendar.get(Calendar.MONTH) + 1).toString())
                     etYear.setText(calendar.get(Calendar.YEAR).toString())
+
+                    // FIX: Pre-fill time fields with current time
+                    var hour = calendar.get(Calendar.HOUR_OF_DAY)
+                    val minute = calendar.get(Calendar.MINUTE)
+
+                    if (!is24HourSystem) {
+                        // 12H Format Logic
+                        val isPm = hour >= 12
+                        if (hour > 12) hour -= 12
+                        if (hour == 0) hour = 12
+                        etHour.setText(hour.toString().padStart(2, '0'))
+                        spinnerAmPm.setSelection(if (isPm) 1 else 0) // Set Spinner correctly
+                    } else {
+                        // 24H Format Logic
+                        etHour.setText(hour.toString().padStart(2, '0'))
+                    }
+                    etMinute.setText(minute.toString().padStart(2, '0'))
                 }
             }
         }
@@ -259,13 +265,26 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun getCombinedTime(): String {
         if (cbNoReminder.isChecked) return "None"
+
         val dd = etDay.text.toString().padStart(2, '0').ifEmpty { "01" }
         val mm = etMonth.text.toString().padStart(2, '0').ifEmpty { "01" }
         val yyyy = etYear.text.toString().ifEmpty { Calendar.getInstance().get(Calendar.YEAR).toString() }
-        val hh = etHour.text.toString().padStart(2, '0').ifEmpty { "00" }
+
+        var hhStr = etHour.text.toString().padStart(2, '0').ifEmpty { "00" }
         val mmTime = etMinute.text.toString().padStart(2, '0').ifEmpty { "00" }
-        val amPm = spinnerAmPm.selectedItem.toString()
-        return "$dd/$mm/$yyyy $hh:$mmTime $amPm"
+
+        // Normalize to 24H format internally for standardized saving
+        if (!is24HourSystem) {
+            var hh = hhStr.toIntOrNull() ?: 0
+            val amPm = spinnerAmPm.selectedItem.toString()
+
+            if (amPm == "PM" && hh < 12) hh += 12
+            if (amPm == "AM" && hh == 12) hh = 0
+
+            hhStr = hh.toString().padStart(2, '0')
+        }
+
+        return "$dd/$mm/$yyyy $hhStr:$mmTime"
     }
 
     private fun setSplitTime(timeString: String) {
@@ -276,18 +295,42 @@ class AddNoteActivity : AppCompatActivity() {
             try {
                 if (timeString.contains("/")) {
                     val parts = timeString.split(" ")
-                    val datePart = parts.find { it.contains("/") } ?: ""
+                    val datePart = parts[0]
                     val dateSplit = datePart.split("/")
-                    if (dateSplit.size == 3) { etDay.setText(dateSplit[0]); etMonth.setText(dateSplit[1]); etYear.setText(dateSplit[2]) }
+                    if (dateSplit.size == 3) {
+                        etDay.setText(dateSplit[0])
+                        etMonth.setText(dateSplit[1])
+                        etYear.setText(dateSplit[2])
+                    }
+
+                    if (parts.size > 1) {
+                        val timePart = parts[1]
+                        val timeSplit = timePart.split(":")
+                        if (timeSplit.size >= 2) {
+                            var hour = timeSplit[0].toInt()
+                            val minute = timeSplit[1]
+
+                            if (is24HourSystem) {
+                                etHour.setText(hour.toString().padStart(2, '0'))
+                                etMinute.setText(minute)
+                            } else {
+                                var isPm = false
+                                if (hour >= 12) {
+                                    isPm = true
+                                    if (hour > 12) hour -= 12
+                                }
+                                if (hour == 0) hour = 12
+
+                                etHour.setText(hour.toString().padStart(2, '0'))
+                                etMinute.setText(minute)
+                                spinnerAmPm.setSelection(if (isPm) 1 else 0)
+                            }
+                        }
+                    }
                 }
-                if (timeString.contains(":")) {
-                    val parts = timeString.split(" ")
-                    val timePart = parts.find { it.contains(":") } ?: ""
-                    val timeSplit = timePart.split(":")
-                    if (timeSplit.size >= 2) { etHour.setText(timeSplit[0]); etMinute.setText(timeSplit[1]) }
-                    if (timeString.contains("PM", ignoreCase = true)) spinnerAmPm.setSelection(1) else spinnerAmPm.setSelection(0)
-                }
-            } catch (e: Exception) { cbNoReminder.isChecked = true }
+            } catch (e: Exception) {
+                cbNoReminder.isChecked = true
+            }
         }
     }
 
@@ -304,12 +347,15 @@ class AddNoteActivity : AppCompatActivity() {
             aiSummary = etAiSummary.text.toString(),
             roughNote = etNoteInput.text.toString(),
             timestamp = if (isEditMode) existingTimestamp else System.currentTimeMillis(),
-            id = existingNoteId ?: ""
+            id = existingNoteId ?: "local_${System.currentTimeMillis()}"
         )
 
+        NotificationScheduler.scheduleReminder(this, note)
+
         val currentUser = auth.currentUser
-        if (currentUser != null) saveNoteToFirebaseSmart(currentUser.uid, note)
-        else {
+        if (currentUser != null) {
+            saveNoteToFirebaseSmart(currentUser.uid, note)
+        } else {
             LocalNoteManager.saveNote(this, note)
             Toast.makeText(this, "Saved to Device (Guest)", Toast.LENGTH_SHORT).show()
             finish()
@@ -318,7 +364,7 @@ class AddNoteActivity : AppCompatActivity() {
 
     private fun saveNoteToFirebaseSmart(userId: String, note: Note) {
         val userNotesRef = db.collection("users").document(userId).collection("notes")
-        val operation = if (isEditMode && note.id.isNotEmpty()) userNotesRef.document(note.id).set(note) else userNotesRef.add(note)
+        val operation = userNotesRef.document(note.id).set(note)
 
         if (isNetworkAvailable()) {
             Toast.makeText(this, "Syncing to Cloud...", Toast.LENGTH_SHORT).show()
@@ -336,8 +382,6 @@ class AddNoteActivity : AppCompatActivity() {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    // --- AI GENERATION LOGIC ---
-
     private fun generateNoteWithGemini(userText: String) {
         progressBar.visibility = View.VISIBLE
         btnGenerate.isEnabled = false
@@ -345,16 +389,15 @@ class AddNoteActivity : AppCompatActivity() {
         val currentDate = sdf.format(Date())
 
         val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=$apiKey"
-
         val existingCatsString = existingCategories.distinct().joinToString(", ")
 
-        // UPDATED PROMPT: Explicitly request ultra-short summary
+        // UPDATED PROMPT: Request 24H format explicitly for standardized saving
         val promptText = """
             Analyze text: "$userText". Current Date: $currentDate.
             Existing Categories: [$existingCatsString].
             Output JSON. Rules:
             1. Category: Use an existing category if it fits perfectly. If NOT, create a concise new one.
-            2. ReminderTime: Extract date/time ONLY if explicitly mentioned in text. If no specific time is mentioned, output "None".
+            2. ReminderTime: Extract date/time ONLY if explicitly mentioned. Format must be 'dd/MM/yyyy HH:mm' (24-hour). If no time mentioned, output "None".
             3. Priority: 1-9.
             4. AiSummary: Ultra-short, concise summary (max 15 words).
             
@@ -393,7 +436,6 @@ class AddNoteActivity : AppCompatActivity() {
 
                         val aiCat = generatedNote.category ?: "General"
                         etCategoryNew.setText(aiCat)
-
                         val adapter = spinnerCategory.adapter as ArrayAdapter<String>
                         val pos = adapter.getPosition(aiCat)
                         if (pos >= 0) {
@@ -402,7 +444,6 @@ class AddNoteActivity : AppCompatActivity() {
                         } else {
                             showCategorySpinner(false)
                         }
-
                         val aiPriority = generatedNote.priority
                         if (aiPriority in 1..9) spinnerPriority.setSelection(aiPriority - 1) else spinnerPriority.setSelection(4)
 
