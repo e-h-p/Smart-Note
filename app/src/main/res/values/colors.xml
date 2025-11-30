@@ -17,4 +17,5 @@
     <color name="bottom_bar_bg">#FFFFFF</color>
     <color name="bottom_bar_content">#000000</color>
     <color name="mid_green">#008000</color>
+    <color name="priority_low">#00E676</color>    <color name="priority_med">#FFEB3B</color>    <color name="priority_high">#FF1744</color>
 </resources>

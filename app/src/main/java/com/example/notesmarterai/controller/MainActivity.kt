@@ -10,7 +10,6 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -44,12 +43,13 @@ class MainActivity : AppCompatActivity() {
 
     private val allNotesList = mutableListOf<Note>()
     private val displayList = mutableListOf<Note>()
-
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private var isGuest = false
 
+    // State
     private var isSelectionMode = false
+    private var currentSortMode = "DATE_DESC"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,7 +66,6 @@ class MainActivity : AppCompatActivity() {
         tvPinAction = findViewById(R.id.tvPinAction)
         ivPinAction = findViewById(R.id.ivPinAction)
 
-        // Setup Toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
@@ -97,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         refreshData()
     }
 
-    // --- SELECTION LOGIC ---
+    // --- SELECTION & CLICK LOGIC ---
 
     private fun handleNoteLongClick(note: Note) {
         if (!isSelectionMode) {
@@ -112,29 +111,35 @@ class MainActivity : AppCompatActivity() {
         if (isSelectionMode) {
             toggleSelection(note)
         } else {
-            openEditScreen(note)
+            openViewScreen(note)
         }
+    }
+
+    private fun openViewScreen(note: Note) {
+        val intent = Intent(this, ViewNoteActivity::class.java)
+        intent.putExtra("NOTE_ID", note.id)
+        intent.putExtra("NOTE_TITLE", note.title)
+        intent.putExtra("NOTE_CATEGORY", note.category)
+        intent.putExtra("NOTE_PRIORITY", note.priority)
+        intent.putExtra("NOTE_REMINDER", note.reminderTime)
+        intent.putExtra("NOTE_FINAL", note.finalNote)
+        intent.putExtra("NOTE_SUMMARY", note.aiSummary)
+        intent.putExtra("NOTE_ROUGH", note.roughNote)
+        intent.putExtra("NOTE_TIMESTAMP", note.timestamp)
+        startActivity(intent)
     }
 
     private fun toggleSelection(note: Note) {
         note.isSelected = !note.isSelected
         adapter.notifyDataSetChanged()
-
         val selectedNotes = displayList.filter { it.isSelected }
-        if (selectedNotes.isEmpty()) {
-            exitSelectionMode()
-        } else {
-            updateBottomBarUI(selectedNotes)
-        }
+        if (selectedNotes.isEmpty()) exitSelectionMode() else updateBottomBarUI(selectedNotes)
     }
 
     private fun updateBottomBarUI(selectedNotes: List<Note>) {
-        // Logic: If ALL selected notes are pinned -> Show Unpin. Otherwise -> Show Pin.
         val allPinned = selectedNotes.all { it.isPinned }
-
         if (allPinned) {
             tvPinAction.text = "Unpin"
-            // Optionally change icon to something else, or keep same pin icon
             ivPinAction.setImageResource(R.drawable.ic_pin_outline)
         } else {
             tvPinAction.text = "Pin"
@@ -150,72 +155,43 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    // --- PIN ACTION ---
+    // --- PIN & DELETE ACTIONS ---
+
     private fun pinSelectedNotes() {
         val selectedNotes = displayList.filter { it.isSelected }
         if (selectedNotes.isEmpty()) return
-
-        // Check logic again: If all pinned -> Unpin them. Else -> Pin them.
         val allPinned = selectedNotes.all { it.isPinned }
-        val newStatus = !allPinned // Toggle status
-
-        selectedNotes.forEach { note ->
-            note.isPinned = newStatus
-            saveNoteUpdate(note)
-        }
-
+        val newStatus = !allPinned
+        selectedNotes.forEach { note -> note.isPinned = newStatus; saveNoteUpdate(note) }
         exitSelectionMode()
-        val msg = if (newStatus) "Notes Pinned" else "Notes Unpinned"
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         refreshData()
     }
 
-    // --- DELETE ACTION (Same as before) ---
     private fun showDeleteSelectedConfirmation() {
         val selectedCount = displayList.count { it.isSelected }
-        AlertDialog.Builder(this)
-            .setTitle("Delete Notes")
-            .setMessage("Delete $selectedCount selected notes?")
-            .setPositiveButton("Yes") { _, _ -> deleteSelectedNotes() }
-            .setNegativeButton("No", null)
-            .show()
+        AlertDialog.Builder(this).setTitle("Delete").setMessage("Delete $selectedCount notes?")
+            .setPositiveButton("Yes") { _, _ -> deleteSelectedNotes() }.setNegativeButton("No", null).show()
     }
 
     private fun deleteSelectedNotes() {
         val selectedNotes = displayList.filter { it.isSelected }
         selectedNotes.forEach { note ->
-            if (isGuest || auth.currentUser == null) {
-                LocalNoteManager.deleteNote(this, note.id)
-            } else {
-                val userId = auth.currentUser!!.uid
-                if (note.id.isNotEmpty()) {
-                    db.collection("users").document(userId).collection("notes").document(note.id).delete()
-                }
-            }
+            if (isGuest) LocalNoteManager.deleteNote(this, note.id)
+            else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).delete()
         }
         exitSelectionMode()
-        Toast.makeText(this, "Notes Deleted", Toast.LENGTH_SHORT).show()
-        if(isGuest) loadGuestNotes()
+        if (isGuest) loadGuestNotes()
     }
 
     private fun saveNoteUpdate(note: Note) {
-        if (isGuest || auth.currentUser == null) {
-            LocalNoteManager.saveNote(this, note)
-        } else {
-            val userId = auth.currentUser!!.uid
-            db.collection("users").document(userId).collection("notes").document(note.id).set(note)
-        }
+        if (isGuest) LocalNoteManager.saveNote(this, note)
+        else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).set(note)
     }
 
-    // --- DATA LOADING & SORTING ---
+    // --- DATA & SORTING ---
 
     private fun refreshData() {
-        val currentUser = auth.currentUser
-        if (isGuest || currentUser == null) {
-            loadGuestNotes()
-        } else {
-            loadFirebaseNotes(currentUser.uid)
-        }
+        if (isGuest) loadGuestNotes() else loadFirebaseNotes(auth.currentUser!!.uid)
     }
 
     private fun loadGuestNotes() {
@@ -225,25 +201,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadFirebaseNotes(userId: String) {
-        db.collection("users").document(userId).collection("notes")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) return@addSnapshotListener
-                if (snapshots != null) {
-                    allNotesList.clear()
-                    for (document in snapshots) {
-                        val note = document.toObject(Note::class.java)
-                        note.id = document.id
-                        allNotesList.add(note)
-                    }
-                    sortAndDisplay()
+        db.collection("users").document(userId).collection("notes").addSnapshotListener { snapshots, _ ->
+            if (snapshots != null) {
+                allNotesList.clear()
+                for (doc in snapshots) {
+                    val note = doc.toObject(Note::class.java)
+                    note.id = doc.id
+                    allNotesList.add(note)
                 }
+                sortAndDisplay()
             }
+        }
     }
 
     private fun sortAndDisplay() {
-        // Sort: Pinned first, then by Timestamp descending
-        allNotesList.sortWith(compareByDescending<Note> { it.isPinned }.thenByDescending { it.timestamp })
-        updateDisplayList(allNotesList)
+        val sortedList = allNotesList.sortedWith(compareByDescending<Note> { it.isPinned }
+            .thenComparator { n1, n2 ->
+                when (currentSortMode) {
+                    "PRIORITY_HIGH_LOW" -> n2.priority.compareTo(n1.priority)
+                    "PRIORITY_LOW_HIGH" -> n1.priority.compareTo(n2.priority)
+                    else -> n2.timestamp.compareTo(n1.timestamp)
+                }
+            })
+        updateDisplayList(sortedList)
     }
 
     private fun updateDisplayList(list: List<Note>) {
@@ -252,20 +232,19 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    // --- MENU (Search, Filter, Night Mode) ---
+    // --- MENU ACTIONS ---
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         val iconColor = ContextCompat.getColor(this, R.color.toolbar_icon_tint)
+        for (i in 0 until menu!!.size()) { menu.getItem(i).icon?.setTint(iconColor) }
 
-        val searchItem = menu?.findItem(R.id.action_search)
+        val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem?.actionView as SearchView
-
         val searchIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_button)
         searchIcon?.setColorFilter(iconColor)
-
         val closeIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
         closeIcon?.setColorFilter(iconColor)
-
         val searchEditText = searchView.findViewById<EditText>(androidx.appcompat.R.id.search_src_text)
         searchEditText?.setTextColor(iconColor)
         searchEditText?.setHintTextColor(iconColor)
@@ -273,22 +252,31 @@ class MainActivity : AppCompatActivity() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = false
             override fun onQueryTextChange(newText: String?): Boolean {
-                filterList(newText)
+                if(newText.isNullOrEmpty()) sortAndDisplay()
+                else {
+                    val filtered = allNotesList.filter {
+                        it.title.contains(newText, true) || it.finalNote.contains(newText, true)
+                    }
+                    updateDisplayList(filtered)
+                }
                 return true
             }
         })
-
-        val nightItem = menu.findItem(R.id.action_night_mode)
-        val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
-        nightItem.isChecked = prefs.getBoolean("NightMode", false)
-        for (i in 0 until menu!!.size()) {
-            menu.getItem(i).icon?.setTint(iconColor)
-        }
         return true
+    }
+
+    // FIX: Sync menu state here to ensure checkbox is correct when menu opens
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        val nightItem = menu?.findItem(R.id.action_night_mode)
+        val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
+        val isNight = prefs.getBoolean("NightMode", false)
+        nightItem?.isChecked = isNight
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.action_sort -> showSortDialog()
             R.id.action_filter -> showCategoryFilterDialog()
             R.id.action_night_mode -> toggleNightMode(item)
             R.id.action_logout -> showLogoutConfirmation()
@@ -296,82 +284,64 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun filterList(keyword: String?) {
-        if (keyword.isNullOrEmpty()) {
-            sortAndDisplay()
-        } else {
-            val filtered = allNotesList.filter {
-                it.title.contains(keyword, ignoreCase = true) ||
-                        it.finalNote.contains(keyword, ignoreCase = true) ||
-                        it.category.contains(keyword, ignoreCase = true)
+    private fun showSortDialog() {
+        val options = arrayOf("Date (Newest First)", "Priority (High → Low)", "Priority (Low → High)")
+        AlertDialog.Builder(this)
+            .setTitle("Sort By")
+            .setItems(options) { _, which ->
+                currentSortMode = when (which) {
+                    1 -> "PRIORITY_HIGH_LOW"
+                    2 -> "PRIORITY_LOW_HIGH"
+                    else -> "DATE_DESC"
+                }
+                sortAndDisplay()
             }
-            displayList.clear()
-            displayList.addAll(filtered)
-            adapter.notifyDataSetChanged()
-        }
+            .show()
     }
 
     private fun showCategoryFilterDialog() {
         val categories = allNotesList.map { it.category }.distinct().filter { it.isNotEmpty() }.toMutableList()
         categories.add(0, "All")
-        val options = categories.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Select Category")
-            .setItems(options) { _, which ->
-                val selected = options[which]
-                if (selected == "All") sortAndDisplay()
-                else {
-                    val filtered = allNotesList.filter { it.category == selected }
-                    displayList.clear()
-                    displayList.addAll(filtered)
-                    adapter.notifyDataSetChanged()
-                }
+        AlertDialog.Builder(this).setTitle("Select Category").setItems(categories.toTypedArray()) { _, which ->
+            val selected = categories[which]
+            if (selected == "All") sortAndDisplay()
+            else {
+                val filtered = allNotesList.filter { it.category == selected }
+                val sortedFiltered = filtered.sortedWith(compareByDescending<Note> { it.isPinned }
+                    .thenComparator { n1, n2 ->
+                        when (currentSortMode) {
+                            "PRIORITY_HIGH_LOW" -> n2.priority.compareTo(n1.priority)
+                            "PRIORITY_LOW_HIGH" -> n1.priority.compareTo(n2.priority)
+                            else -> n2.timestamp.compareTo(n1.timestamp)
+                        }
+                    })
+                updateDisplayList(sortedFiltered)
             }
-            .show()
+        }.show()
     }
 
     private fun toggleNightMode(item: MenuItem) {
-        val isNowNight = !item.isChecked
-        item.isChecked = isNowNight
-        getSharedPreferences("Settings", Context.MODE_PRIVATE).edit().putBoolean("NightMode", isNowNight).apply()
-        if (isNowNight) AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        else AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        // Logic fix: Toggle based on current pref, not just UI state
+        val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
+        val currentMode = prefs.getBoolean("NightMode", false)
+        val newMode = !currentMode
+
+        prefs.edit().putBoolean("NightMode", newMode).apply()
+        item.isChecked = newMode // Visual update
+
+        AppCompatDelegate.setDefaultNightMode(if (newMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
     }
 
     private fun showLogoutConfirmation() {
-        AlertDialog.Builder(this)
-            .setTitle("Logout")
-            .setMessage("Are you sure you want to logout?")
+        AlertDialog.Builder(this).setTitle("Logout").setMessage("Sign out?")
             .setPositiveButton("Yes") { _, _ ->
                 auth.signOut()
-                startActivity(Intent(this, LoginActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
+                startActivity(Intent(this, LoginActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK })
                 finish()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun openEditScreen(note: Note) {
-        val intent = Intent(this, AddNoteActivity::class.java)
-        intent.putExtra("NOTE_ID", note.id)
-        intent.putExtra("NOTE_TITLE", note.title)
-        intent.putExtra("NOTE_CATEGORY", note.category)
-        intent.putExtra("NOTE_PRIORITY", note.priority)
-        intent.putExtra("NOTE_REMINDER", note.reminderTime)
-        intent.putExtra("NOTE_FINAL", note.finalNote)
-        intent.putExtra("NOTE_SUMMARY", note.aiSummary)
-        intent.putExtra("NOTE_ROUGH", note.roughNote)
-        intent.putExtra("NOTE_TIMESTAMP", note.timestamp)
-        startActivity(intent)
+            }.setNegativeButton("No", null).show()
     }
 
     override fun onBackPressed() {
-        if (isSelectionMode) {
-            exitSelectionMode()
-        } else {
-            super.onBackPressed()
-        }
+        if (isSelectionMode) exitSelectionMode() else super.onBackPressed()
     }
 }
