@@ -34,23 +34,44 @@
                 android:maxLines="2"
                 android:ellipsize="end"/>
 
+            <!-- Pin Indicator -->
             <ImageView
                 android:id="@+id/ivPinIndicator"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_pin_filled_green"
                 android:visibility="gone"
-                android:layout_marginEnd="4dp"
-                android:contentDescription="Pinned Note Indicator" />
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Pinned Note" />
 
-            <TextView
-                android:id="@+id/tvPriority"
+            <!-- VERTICAL STACK: Priority + Reminder Icon -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="P:1"
-                android:textSize="12sp"
-                android:textColor="@color/text_priority"
-                android:textStyle="bold"/>
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tvPriority"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="P:1"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_priority"
+                    android:textStyle="bold"/>
+
+                <!-- NEW: Reminder Icon (Visible only if active) -->
+                <ImageView
+                    android:id="@+id/ivReminderActive"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_alarm"
+                    android:visibility="gone"
+                    android:layout_marginTop="2dp"
+                    app:tint="@color/text_priority"
+                    android:contentDescription="Active Reminder" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <TextView
