@@ -2,7 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- 1. SEARCH ICON (Visible) -->
     <item
         android:id="@+id/action_search"
         android:icon="@android:drawable/ic_menu_search"
@@ -10,29 +9,33 @@
         app:showAsAction="ifRoom|collapseActionView"
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
-    <!-- 2. SORT ICON (Visible) -->
     <item
         android:id="@+id/action_sort"
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:title="Sort"
         app:showAsAction="ifRoom" />
 
-    <!-- 3. FILTER (In Overflow Menu to save space for icons) -->
     <item
         android:id="@+id/action_filter"
         android:title="Filter Category"
         app:showAsAction="never" />
 
-    <!-- 4. NIGHT MODE (In Overflow) -->
     <item
         android:id="@+id/action_night_mode"
         android:title="Night Mode"
         android:checkable="true"
         app:showAsAction="never" />
 
-    <!-- 5. LOGOUT (In Overflow) -->
+    <!-- UPDATED: Two options for Auth State -->
+    <item
+        android:id="@+id/action_login"
+        android:title="Sign in with Google"
+        android:visible="false"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_logout"
         android:title="Logout"
+        android:visible="true"
         app:showAsAction="never" />
 </menu>

@@ -1,10 +1,7 @@
 package com.example.notesmarterai.controller
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -13,8 +10,8 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts // Import needed
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -26,20 +23,25 @@ import com.example.notesmarterai.R
 import com.example.notesmarterai.adapter.NoteAdapter
 import com.example.notesmarterai.model.LocalNoteManager
 import com.example.notesmarterai.model.Note
-import com.example.notesmarterai.model.NotificationScheduler // Import Scheduler
+import com.example.notesmarterai.model.NotificationScheduler
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : AppCompatActivity() {
 
-    // ... (Previous Variables) ...
     private lateinit var recyclerView: RecyclerView
     private lateinit var fabAdd: FloatingActionButton
     private lateinit var adapter: NoteAdapter
     private lateinit var toolbar: MaterialToolbar
+
+    // Bottom Action Bar Views
     private lateinit var bottomSelectionBar: MaterialCardView
     private lateinit var btnPinSelected: LinearLayout
     private lateinit var btnDeleteSelected: LinearLayout
@@ -50,31 +52,22 @@ class MainActivity : AppCompatActivity() {
     private val displayList = mutableListOf<Note>()
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private var isGuest = false
 
+    // Auth State
+    private var isGuest = false
+    private val GOOGLE_SIGN_IN_REQUEST_CODE = 9002
+
+    // State Variables for Filters & Sort
     private var isSelectionMode = false
     private var currentSortMode = "DATE_DESC"
     private var currentCategory = "All"
     private var currentSearchQuery = ""
 
-    // Permission Launcher for Android 13+
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (!isGranted) {
-            // Optional: Show UI saying notifications are disabled
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Create Notification Channel
-        NotificationScheduler.createNotificationChannel(this)
-        checkNotificationPermissions()
-
-        // ... (Rest of onCreate logic remains SAME) ...
+        // 1. Initialize Views
         recyclerView = findViewById(R.id.recyclerViewNotes)
         fabAdd = findViewById(R.id.fabAddNote)
         toolbar = findViewById(R.id.toolbar)
@@ -88,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
+        // 2. Setup RecyclerView
         recyclerView.layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         adapter = NoteAdapter(
             displayList,
@@ -96,16 +90,24 @@ class MainActivity : AppCompatActivity() {
         )
         recyclerView.adapter = adapter
 
+        // 3. Listeners
         fabAdd.setOnClickListener { startActivity(Intent(this, AddNoteActivity::class.java)) }
         btnPinSelected.setOnClickListener { pinSelectedNotes() }
         btnDeleteSelected.setOnClickListener { showDeleteSelectedConfirmation() }
 
-        isGuest = intent.getBooleanExtra("IS_GUEST", false)
+        // 4. Check Notification Channel (for reminders)
+        NotificationScheduler.createNotificationChannel(this)
+
+        // 5. Determine User Type & Load Data
+        // Check intent first, fallback to auth state
+        isGuest = intent.getBooleanExtra("IS_GUEST", auth.currentUser == null)
+
         val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
         val isNight = prefs.getBoolean("NightMode", false)
         if (isNight) AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         else AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
+        // 6. Back Press Logic
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (isSelectionMode) {
@@ -118,21 +120,88 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // Helper to check permissions
-    private fun checkNotificationPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    override fun onResume() {
+        super.onResume()
+        // Re-check guest state on resume in case they logged in elsewhere (edge case)
+        isGuest = (auth.currentUser == null)
+        invalidateOptionsMenu() // Refresh menu (Login vs Logout)
+        refreshData()
+    }
+
+    // --- MIGRATION LOGIC ---
+
+    private fun initiateGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+        val signInClient = GoogleSignIn.getClient(this, gso)
+        startActivityForResult(signInClient.signInIntent, GOOGLE_SIGN_IN_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == GOOGLE_SIGN_IN_REQUEST_CODE) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                firebaseAuthWithGoogle(account.idToken!!)
+            } catch (e: ApiException) {
+                Toast.makeText(this, "Sign In Failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ... (Rest of the file remains EXACTLY the same: onResume, Handlers, Menus, etc.) ...
-    // Just copy the rest of your existing MainActivity code here from previous steps.
-    override fun onResume() {
-        super.onResume()
-        refreshData()
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    // SUCCESS: User is now logged in.
+                    isGuest = false
+                    Toast.makeText(this, "Signed in! Syncing notes...", Toast.LENGTH_SHORT).show()
+
+                    // TRIGGER MIGRATION
+                    migrateGuestNotesToFirebase()
+
+                    // Refresh UI
+                    invalidateOptionsMenu()
+                    refreshData()
+                } else {
+                    Toast.makeText(this, "Authentication Failed.", Toast.LENGTH_SHORT).show()
+                }
+            }
     }
+
+    private fun migrateGuestNotesToFirebase() {
+        val userId = auth.currentUser?.uid ?: return
+        val localNotes = LocalNoteManager.getNotes(this)
+
+        if (localNotes.isEmpty()) return // Nothing to migrate
+
+        val batch = db.batch()
+        val userNotesRef = db.collection("users").document(userId).collection("notes")
+
+        localNotes.forEach { note ->
+            // We create a new document reference for each local note
+            // We can reuse the local ID or let Firebase gen a new one.
+            // Letting Firebase gen a new one avoids ID conflicts.
+            val docRef = userNotesRef.document()
+            val newNote = note.copy(id = docRef.id) // Update ID to Firebase ID
+            batch.set(docRef, newNote)
+        }
+
+        batch.commit().addOnSuccessListener {
+            Toast.makeText(this, "Notes migrated to Cloud!", Toast.LENGTH_SHORT).show()
+            // Clear local storage after successful upload
+            LocalNoteManager.clearAll(this) // You'll need to add this method to LocalNoteManager
+            refreshData()
+        }.addOnFailureListener {
+            Toast.makeText(this, "Migration failed. Notes kept locally.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // --- SELECTION & CLICK LOGIC ---
 
     private fun handleNoteLongClick(note: Note) {
         if (!isSelectionMode) {
@@ -153,6 +222,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openViewScreen(note: Note) {
         val intent = Intent(this, ViewNoteActivity::class.java)
+        // Pass all fields
         intent.putExtra("NOTE_ID", note.id)
         intent.putExtra("NOTE_TITLE", note.title)
         intent.putExtra("NOTE_CATEGORY", note.category)
@@ -191,6 +261,8 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
+    // --- PIN & DELETE ACTIONS ---
+
     private fun pinSelectedNotes() {
         val selectedNotes = displayList.filter { it.isSelected }
         if (selectedNotes.isEmpty()) return
@@ -212,7 +284,6 @@ class MainActivity : AppCompatActivity() {
         selectedNotes.forEach { note ->
             if (isGuest) LocalNoteManager.deleteNote(this, note.id)
             else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).delete()
-            // NEW: Cancel Notification if deleted
             NotificationScheduler.cancelReminder(this, note)
         }
         exitSelectionMode()
@@ -223,6 +294,8 @@ class MainActivity : AppCompatActivity() {
         if (isGuest) LocalNoteManager.saveNote(this, note)
         else db.collection("users").document(auth.currentUser!!.uid).collection("notes").document(note.id).set(note)
     }
+
+    // --- DATA LOADING ---
 
     private fun refreshData() {
         if (isGuest) loadGuestNotes() else loadFirebaseNotes(auth.currentUser!!.uid)
@@ -277,6 +350,8 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
+    // --- MENU ACTIONS ---
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         val iconColor = ContextCompat.getColor(this, R.color.toolbar_icon_tint)
@@ -322,6 +397,19 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until menu!!.size()) {
             menu.getItem(i).icon?.setTint(iconColor)
         }
+
+        // NEW: Toggle Visibility based on Auth State
+        val loginItem = menu?.findItem(R.id.action_login)
+        val logoutItem = menu?.findItem(R.id.action_logout)
+
+        if (isGuest) {
+            loginItem?.isVisible = true
+            logoutItem?.isVisible = false
+        } else {
+            loginItem?.isVisible = false
+            logoutItem?.isVisible = true
+        }
+
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -330,6 +418,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_sort -> showSortDialog()
             R.id.action_filter -> showCategoryFilterDialog()
             R.id.action_night_mode -> toggleNightMode(item)
+            R.id.action_login -> initiateGoogleSignIn() // NEW
             R.id.action_logout -> showLogoutConfirmation()
         }
         return super.onOptionsItemSelected(item)
