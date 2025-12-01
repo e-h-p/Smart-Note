@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
 
-    <color name="toolbar_background">#121212</color>
+    <color name="bg_gradient_start">#0F172A</color> <color name="bg_gradient_end">#1E293B</color>   <color name="glass_surface">#1AFFFFFF</color>     <color name="glass_border">#33FFFFFF</color>      <color name="glass_text_primary">#F3F4F6</color>  <color name="glass_text_secondary">#9CA3AF</color> <color name="input_background">#10FFFFFF</color>  <color name="water_accent">#40C4FF</color>        <color name="water_accent_gradient">#0091EA</color>
+
     <color name="toolbar_icon_tint">#FFFFFF</color>
-    <color name="text_priority">@color/purple_200</color>
+    <color name="bottom_bar_bg">#262626</color>
+    <color name="bottom_bar_content">#FFFFFF</color>
+    <color name="card_selection_overlay">#30BB86FC</color>
+
+    <color name="priority_low">#00E676</color>
+    <color name="priority_med">#FFD740</color>
+    <color name="priority_high">#FF5252</color>
+
     <color name="card_background_default">#1E1E1E</color>
     <color name="card_background_selected">#323232</color>
-
-    <color name="bottom_bar_bg">#1E1E1E</color>
-    <color name="bottom_bar_content">#FFFFFF</color>
 </resources>
