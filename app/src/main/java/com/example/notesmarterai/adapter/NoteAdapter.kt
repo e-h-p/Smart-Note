@@ -5,12 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesmarterai.R
 import com.example.notesmarterai.model.Note
-import com.google.android.material.card.MaterialCardView
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,8 +26,9 @@ class NoteAdapter(
         val tvPriority: TextView = itemView.findViewById(R.id.tvPriority)
         val tvSummary: TextView = itemView.findViewById(R.id.tvSummary)
         val ivPinIndicator: ImageView = itemView.findViewById(R.id.ivPinIndicator)
-        val ivReminderActive: ImageView = itemView.findViewById(R.id.ivReminderActive) // NEW
-        val cardView: MaterialCardView = itemView.findViewById(R.id.cardView)
+        val ivReminderActive: ImageView = itemView.findViewById(R.id.ivReminderActive)
+        // CHANGED: This is now a generic View or LinearLayout, not MaterialCardView
+        val cardContainer: View = itemView.findViewById(R.id.cardView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
@@ -41,7 +42,7 @@ class NoteAdapter(
 
         holder.tvTitle.text = note.title
         holder.tvCategory.text = note.category
-        holder.tvPriority.text = "P: ${note.priority}"
+        holder.tvPriority.text = "●" // Using a dot for the new design
         holder.tvSummary.text = if (note.aiSummary.isNotEmpty()) note.aiSummary else note.finalNote
 
         // Priority Colors
@@ -51,35 +52,33 @@ class NoteAdapter(
             else -> ContextCompat.getColor(context, R.color.priority_high)
         }
         holder.tvPriority.setTextColor(priorityColor)
-        // Tint the reminder icon same as priority for a clean look
-        holder.ivReminderActive.setColorFilter(priorityColor)
+        holder.ivReminderActive.setColorFilter(ContextCompat.getColor(context, R.color.glass_text_secondary))
 
         // --- REMINDER ICON LOGIC ---
         if (note.reminderTime.equals("None", ignoreCase = true) || note.reminderTime.isEmpty()) {
             holder.ivReminderActive.visibility = View.GONE
         } else {
-            // Parse Date to check if expired
             val currentTime = System.currentTimeMillis()
             val reminderTime = parseDateToMillis(note.reminderTime)
-
             if (reminderTime > currentTime) {
-                holder.ivReminderActive.visibility = View.VISIBLE // Active
+                holder.ivReminderActive.visibility = View.VISIBLE
             } else {
-                holder.ivReminderActive.visibility = View.GONE // Expired
+                holder.ivReminderActive.visibility = View.GONE
             }
         }
 
         // Pin Indicator
         holder.ivPinIndicator.visibility = if (note.isPinned) View.VISIBLE else View.GONE
 
-        // Selection Visuals
+        // Selection Visuals (Glass Effect)
         if (note.isSelected) {
-            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background_selected))
-            holder.cardView.strokeWidth = 4
-            holder.cardView.strokeColor = Color.parseColor("#FF6200EE")
+            // Apply a subtle overlay for selection
+            holder.cardContainer.setBackgroundResource(R.drawable.bg_glass_card)
+            holder.cardContainer.background.setTint(ContextCompat.getColor(context, R.color.card_selection_overlay))
         } else {
-            holder.cardView.setCardBackgroundColor(ContextCompat.getColor(context, R.color.card_background_default))
-            holder.cardView.strokeWidth = 0
+            // Restore default glass
+            holder.cardContainer.setBackgroundResource(R.drawable.bg_glass_card)
+            holder.cardContainer.background.setTintList(null)
         }
 
         holder.itemView.setOnClickListener { onNoteClick(note) }
@@ -88,7 +87,6 @@ class NoteAdapter(
 
     override fun getItemCount(): Int = noteList.size
 
-    // Helper to parse the 24h format saved in DB
     private fun parseDateToMillis(dateString: String): Long {
         return try {
             val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())

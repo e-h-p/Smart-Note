@@ -38,7 +38,10 @@ class AddNoteActivity : AppCompatActivity() {
     private lateinit var btnRevertCategory: ImageButton
     private lateinit var spinnerPriority: Spinner
     private lateinit var etFinalNote: EditText
-    private lateinit var etAiSummary: EditText
+
+    // UPDATED: Changed from EditText to TextView for the Glass/Water design
+    private lateinit var tvAiSummary: TextView
+
     private lateinit var etDay: EditText
     private lateinit var etMonth: EditText
     private lateinit var etYear: EditText
@@ -94,7 +97,10 @@ class AddNoteActivity : AppCompatActivity() {
             if (p in 1..9) spinnerPriority.setSelection(p - 1)
 
             etFinalNote.setText(intent.getStringExtra("NOTE_FINAL"))
-            etAiSummary.setText(intent.getStringExtra("NOTE_SUMMARY"))
+
+            // UPDATED: Set text to the TextView
+            tvAiSummary.text = intent.getStringExtra("NOTE_SUMMARY")
+
             etNoteInput.setText(intent.getStringExtra("NOTE_ROUGH") ?: "")
             setSplitTime(intent.getStringExtra("NOTE_REMINDER") ?: "None")
         } else {
@@ -122,7 +128,10 @@ class AddNoteActivity : AppCompatActivity() {
         btnRevertCategory = findViewById(R.id.btnRevertCategory)
         spinnerPriority = findViewById(R.id.spinnerPriority)
         etFinalNote = findViewById(R.id.etFinalNote)
-        etAiSummary = findViewById(R.id.etAiSummary)
+
+        // UPDATED: Link to the correct TextView ID from XML
+        tvAiSummary = findViewById(R.id.tvAiSummary)
+
         progressBar = findViewById(R.id.progressBarAI)
         btnGenerate = findViewById(R.id.btnGenerateAI)
         btnSave = findViewById(R.id.btnSaveNote)
@@ -242,19 +251,16 @@ class AddNoteActivity : AppCompatActivity() {
                     etMonth.setText((calendar.get(Calendar.MONTH) + 1).toString())
                     etYear.setText(calendar.get(Calendar.YEAR).toString())
 
-                    // FIX: Pre-fill time fields with current time
                     var hour = calendar.get(Calendar.HOUR_OF_DAY)
                     val minute = calendar.get(Calendar.MINUTE)
 
                     if (!is24HourSystem) {
-                        // 12H Format Logic
                         val isPm = hour >= 12
                         if (hour > 12) hour -= 12
                         if (hour == 0) hour = 12
                         etHour.setText(hour.toString().padStart(2, '0'))
-                        spinnerAmPm.setSelection(if (isPm) 1 else 0) // Set Spinner correctly
+                        spinnerAmPm.setSelection(if (isPm) 1 else 0)
                     } else {
-                        // 24H Format Logic
                         etHour.setText(hour.toString().padStart(2, '0'))
                     }
                     etMinute.setText(minute.toString().padStart(2, '0'))
@@ -273,7 +279,6 @@ class AddNoteActivity : AppCompatActivity() {
         var hhStr = etHour.text.toString().padStart(2, '0').ifEmpty { "00" }
         val mmTime = etMinute.text.toString().padStart(2, '0').ifEmpty { "00" }
 
-        // Normalize to 24H format internally for standardized saving
         if (!is24HourSystem) {
             var hh = hhStr.toIntOrNull() ?: 0
             val amPm = spinnerAmPm.selectedItem.toString()
@@ -344,7 +349,10 @@ class AddNoteActivity : AppCompatActivity() {
             reminderTime = getCombinedTime(),
             priority = selectedPriority,
             finalNote = etFinalNote.text.toString(),
-            aiSummary = etAiSummary.text.toString(),
+
+            // UPDATED: Grab text from the TextView
+            aiSummary = tvAiSummary.text.toString(),
+
             roughNote = etNoteInput.text.toString(),
             timestamp = if (isEditMode) existingTimestamp else System.currentTimeMillis(),
             id = existingNoteId ?: "local_${System.currentTimeMillis()}"
@@ -391,7 +399,7 @@ class AddNoteActivity : AppCompatActivity() {
         val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=$apiKey"
         val existingCatsString = existingCategories.distinct().joinToString(", ")
 
-        // UPDATED PROMPT: Request 24H format explicitly for standardized saving
+        // Prompt logic remains the same
         val promptText = """
             Analyze text: "$userText". Current Date: $currentDate.
             Existing Categories: [$existingCatsString].
@@ -447,7 +455,9 @@ class AddNoteActivity : AppCompatActivity() {
                         val aiPriority = generatedNote.priority
                         if (aiPriority in 1..9) spinnerPriority.setSelection(aiPriority - 1) else spinnerPriority.setSelection(4)
 
-                        etAiSummary.setText(generatedNote.aiSummary ?: "")
+                        // UPDATED: Set the read-only TextView
+                        tvAiSummary.text = generatedNote.aiSummary ?: ""
+
                         etFinalNote.setText(generatedNote.finalNote ?: userText)
 
                         val remTime = generatedNote.reminderTime
@@ -468,7 +478,10 @@ class AddNoteActivity : AppCompatActivity() {
         showCategorySpinner(true)
         spinnerPriority.setSelection(4)
         etFinalNote.setText(text)
-        etAiSummary.setText(text)
+
+        // UPDATED: Set default text to TextView
+        tvAiSummary.text = text
+
         setSplitTime("None")
     }
 

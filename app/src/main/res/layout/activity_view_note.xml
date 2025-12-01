@@ -5,13 +5,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/toolbar_background"
-        app:elevation="0dp">
+        android:background="@android:color/transparent"
+        app:elevation="0dp"
+        android:layout_marginTop="8dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -25,8 +27,8 @@
                 android:layout_height="wrap_content"
                 android:text="View Note"
                 android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@color/toolbar_icon_tint"/>
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/glass_text_primary"/>
 
             <ImageView
                 android:id="@+id/btnEdit"
@@ -35,11 +37,11 @@
                 android:src="@android:drawable/ic_menu_edit"
                 android:layout_gravity="end"
                 android:layout_marginEnd="16dp"
-                app:tint="@color/toolbar_icon_tint"/>
+                app:tint="@color/glass_text_primary"/>
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
@@ -55,9 +57,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Note Title"
-                android:textSize="28sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="@color/toolbar_icon_tint"
+                android:textColor="@color/glass_text_primary"
                 android:layout_marginBottom="4dp"/>
 
             <TextView
@@ -66,114 +68,90 @@
                 android:layout_height="wrap_content"
                 android:text="Category • Date"
                 android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"
+                android:textColor="@color/glass_text_secondary"
                 android:layout_marginBottom="24dp"/>
 
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/card_background_default"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@android:color/darker_gray"
-                app:cardElevation="0dp"
+                android:background="@drawable/bg_glass_card"
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📝 Original Input"
+                    android:textStyle="bold"
+                    android:textColor="@color/water_accent"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvViewOriginal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Original text..."
+                    android:textSize="16sp"
+                    android:textColor="@color/glass_text_primary"
+                    android:lineSpacingExtra="4dp"
+                    android:textIsSelectable="true"/>
+            </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📝 Original Input"
-                        android:textStyle="bold"
-                        android:textColor="@color/teal_200"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:id="@+id/tvViewOriginal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Original text..."
-                        android:textSize="16sp"
-                        android:lineSpacingExtra="4dp"
-                        android:textIsSelectable="true"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/card_background_default"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@android:color/darker_gray"
-                app:cardElevation="0dp"
+                android:background="@drawable/bg_glass_card"
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✨ AI Rewritten"
+                    android:textStyle="bold"
+                    android:textColor="@color/water_accent"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvViewFinal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Polished text..."
+                    android:textSize="16sp"
+                    android:textColor="@color/glass_text_primary"
+                    android:lineSpacingExtra="4dp"
+                    android:textIsSelectable="true"/>
+            </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="✨ AI Rewritten"
-                        android:textStyle="bold"
-                        android:textColor="@color/teal_200"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:id="@+id/tvViewFinal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Polished text..."
-                        android:textSize="16sp"
-                        android:lineSpacingExtra="4dp"
-                        android:textIsSelectable="true"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/card_background_default"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@android:color/darker_gray"
-                app:cardElevation="0dp"
+                android:background="@drawable/bg_glass_card"
+                android:orientation="vertical"
+                android:padding="16dp"
                 android:layout_marginBottom="32dp">
 
-                <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📌 AI Summary"
+                    android:textStyle="bold"
+                    android:textColor="@color/water_accent"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvViewSummary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📌 AI Summary"
-                        android:textStyle="bold"
-                        android:textColor="@color/teal_200"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:id="@+id/tvViewSummary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Short summary..."
-                        android:textSize="16sp"
-                        android:lineSpacingExtra="4dp"
-                        android:textIsSelectable="true"/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                    android:text="Short summary..."
+                    android:textSize="16sp"
+                    android:textColor="@color/glass_text_secondary"
+                    android:lineSpacingExtra="4dp"
+                    android:textIsSelectable="true"/>
+            </LinearLayout>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

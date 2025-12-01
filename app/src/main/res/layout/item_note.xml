@@ -1,97 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="6dp"
-    app:cardElevation="2dp"
-    app:cardCornerRadius="12dp"
-    app:strokeWidth="2dp"
-    app:strokeColor="@android:color/transparent">
+    android:background="@drawable/bg_glass_card"
+    android:orientation="vertical"
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/tvTitle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Title"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:maxLines="2"
-                android:ellipsize="end"/>
-
-            <!-- Pin Indicator -->
-            <ImageView
-                android:id="@+id/ivPinIndicator"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_pin_filled_green"
-                android:visibility="gone"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="Pinned Note" />
-
-            <!-- VERTICAL STACK: Priority + Reminder Icon -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
-
-                <TextView
-                    android:id="@+id/tvPriority"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="P:1"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_priority"
-                    android:textStyle="bold"/>
-
-                <!-- NEW: Reminder Icon (Visible only if active) -->
-                <ImageView
-                    android:id="@+id/ivReminderActive"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_alarm"
-                    android:visibility="gone"
-                    android:layout_marginTop="2dp"
-                    app:tint="@color/text_priority"
-                    android:contentDescription="Active Reminder" />
-            </LinearLayout>
-
-        </LinearLayout>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
         <TextView
-            android:id="@+id/tvCategory"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvTitle"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Category"
-            android:textSize="10sp"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginTop="4dp"/>
-
-        <TextView
-            android:id="@+id/tvSummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Summary..."
-            android:textSize="12sp"
-            android:maxLines="4"
+            android:layout_weight="1"
+            android:text="Title"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/glass_text_primary"
+            android:maxLines="2"
             android:ellipsize="end"/>
 
+        <ImageView
+            android:id="@+id/ivPinIndicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_pin_filled_green"
+            android:visibility="gone"
+            android:layout_marginEnd="8dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tvPriority"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="●"
+                android:textSize="18sp"
+                android:textColor="@color/priority_med"/>
+
+            <ImageView
+                android:id="@+id/ivReminderActive"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_alarm"
+                android:visibility="gone"
+                app:tint="@color/glass_text_secondary" />
+        </LinearLayout>
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/tvCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Category"
+        android:textSize="10sp"
+        android:textColor="@color/glass_text_secondary"
+        android:background="@drawable/bg_input_field"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:layout_marginTop="8dp"/>
+
+    <TextView
+        android:id="@+id/tvSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Summary text..."
+        android:textSize="14sp"
+        android:textColor="@color/glass_text_secondary"
+        android:maxLines="4"
+        android:ellipsize="end"
+        android:lineSpacingExtra="2dp"/>
+
+</LinearLayout>

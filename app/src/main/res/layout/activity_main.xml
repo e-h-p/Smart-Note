@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true"
     tools:context=".controller.MainActivity">
 
@@ -16,14 +17,15 @@
             android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/toolbar_background"
-            app:elevation="0dp">
+            android:background="@android:color/transparent"
+            app:elevation="0dp"
+            android:layout_margin="12dp">
 
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="@color/toolbar_background"
+                android:background="@drawable/bg_glass_card"
                 app:menu="@menu/menu_main"
                 app:title="">
 
@@ -32,22 +34,19 @@
                     android:layout_height="match_parent"
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
-
                     <ImageView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:src="@drawable/ic_launcher_foreground"
-                        android:contentDescription="App Logo"
-                        app:tint="@color/toolbar_icon_tint"/>
-
+                        app:tint="@color/water_accent"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="SmartNoteAI"
+                        android:text="SmartNote"
                         android:textSize="20sp"
-                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium"
                         android:layout_marginStart="12dp"
-                        android:textColor="@color/toolbar_icon_tint"/>
+                        android:textColor="@color/glass_text_primary"/>
                 </LinearLayout>
             </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
@@ -57,24 +56,24 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_below="@id/appBarLayout"
-            android:padding="8dp"
-            android:clipToPadding="false"
-            android:paddingBottom="80dp"/>
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="80dp"
+            android:clipToPadding="false"/>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/bottomSelectionBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_margin="16dp"
+            android:layout_margin="24dp"
             android:visibility="gone"
-            app:cardBackgroundColor="@color/bottom_bar_bg"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp">
-
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardElevation="0dp">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_glass_card"
                 android:orientation="horizontal"
                 android:gravity="center"
                 android:padding="12dp">
@@ -87,24 +86,22 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:background="?attr/selectableItemBackground">
-
                     <ImageView
                         android:id="@+id/ivPinAction"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_pin_outline"
-                        app:tint="@color/bottom_bar_content"/>
-
+                        app:tint="@color/glass_text_primary"/>
                     <TextView
                         android:id="@+id/tvPinAction"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Pin"
-                        android:textColor="@color/bottom_bar_content"
+                        android:textColor="@color/glass_text_primary"
                         android:textSize="12sp"/>
                 </LinearLayout>
 
-                <View android:layout_width="1dp" android:layout_height="24dp" android:background="@color/bottom_bar_content"/>
+                <View android:layout_width="1dp" android:layout_height="24dp" android:background="@color/glass_border"/>
 
                 <LinearLayout
                     android:id="@+id/btnDeleteSelected"
@@ -118,28 +115,32 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@android:drawable/ic_menu_delete"
-                        app:tint="@color/bottom_bar_content"/>
+                        app:tint="@color/glass_text_primary"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Delete"
-                        android:textColor="@color/bottom_bar_content"
+                        android:textColor="@color/glass_text_primary"
                         android:textSize="12sp"/>
                 </LinearLayout>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <ImageView
             android:id="@+id/fabAddNote"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentEnd="true"
-            android:layout_margin="16dp"
+            android:layout_margin="24dp"
+            android:background="@drawable/bg_bubble_button"
             android:src="@android:drawable/ic_input_add"
-            app:backgroundTint="@color/purple_500"
+            android:padding="16dp"
             app:tint="@color/white"
+            android:elevation="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add Note" />
 
     </RelativeLayout>

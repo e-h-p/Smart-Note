@@ -29,7 +29,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+// import com.google.android.material.floatingactionbutton.FloatingActionButton // Removed
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
@@ -37,7 +37,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 class MainActivity : AppCompatActivity() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var fabAdd: FloatingActionButton
+    // UPDATED: Changed from FloatingActionButton to ImageView
+    private lateinit var fabAdd: ImageView
     private lateinit var adapter: NoteAdapter
     private lateinit var toolbar: MaterialToolbar
 
@@ -99,7 +100,6 @@ class MainActivity : AppCompatActivity() {
         NotificationScheduler.createNotificationChannel(this)
 
         // 5. Determine User Type & Load Data
-        // Check intent first, fallback to auth state
         isGuest = intent.getBooleanExtra("IS_GUEST", auth.currentUser == null)
 
         val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
@@ -157,14 +157,9 @@ class MainActivity : AppCompatActivity() {
         auth.signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // SUCCESS: User is now logged in.
                     isGuest = false
                     Toast.makeText(this, "Signed in! Syncing notes...", Toast.LENGTH_SHORT).show()
-
-                    // TRIGGER MIGRATION
                     migrateGuestNotesToFirebase()
-
-                    // Refresh UI
                     invalidateOptionsMenu()
                     refreshData()
                 } else {
@@ -177,24 +172,20 @@ class MainActivity : AppCompatActivity() {
         val userId = auth.currentUser?.uid ?: return
         val localNotes = LocalNoteManager.getNotes(this)
 
-        if (localNotes.isEmpty()) return // Nothing to migrate
+        if (localNotes.isEmpty()) return
 
         val batch = db.batch()
         val userNotesRef = db.collection("users").document(userId).collection("notes")
 
         localNotes.forEach { note ->
-            // We create a new document reference for each local note
-            // We can reuse the local ID or let Firebase gen a new one.
-            // Letting Firebase gen a new one avoids ID conflicts.
             val docRef = userNotesRef.document()
-            val newNote = note.copy(id = docRef.id) // Update ID to Firebase ID
+            val newNote = note.copy(id = docRef.id)
             batch.set(docRef, newNote)
         }
 
         batch.commit().addOnSuccessListener {
             Toast.makeText(this, "Notes migrated to Cloud!", Toast.LENGTH_SHORT).show()
-            // Clear local storage after successful upload
-            LocalNoteManager.clearAll(this) // You'll need to add this method to LocalNoteManager
+            LocalNoteManager.clearAll(this)
             refreshData()
         }.addOnFailureListener {
             Toast.makeText(this, "Migration failed. Notes kept locally.", Toast.LENGTH_LONG).show()
@@ -222,7 +213,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun openViewScreen(note: Note) {
         val intent = Intent(this, ViewNoteActivity::class.java)
-        // Pass all fields
         intent.putExtra("NOTE_ID", note.id)
         intent.putExtra("NOTE_TITLE", note.title)
         intent.putExtra("NOTE_CATEGORY", note.category)
@@ -398,7 +388,6 @@ class MainActivity : AppCompatActivity() {
             menu.getItem(i).icon?.setTint(iconColor)
         }
 
-        // NEW: Toggle Visibility based on Auth State
         val loginItem = menu?.findItem(R.id.action_login)
         val logoutItem = menu?.findItem(R.id.action_logout)
 
@@ -418,7 +407,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_sort -> showSortDialog()
             R.id.action_filter -> showCategoryFilterDialog()
             R.id.action_night_mode -> toggleNightMode(item)
-            R.id.action_login -> initiateGoogleSignIn() // NEW
+            R.id.action_login -> initiateGoogleSignIn()
             R.id.action_logout -> showLogoutConfirmation()
         }
         return super.onOptionsItemSelected(item)
